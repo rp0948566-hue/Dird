@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Development-only MA PyTorch -> ONNX export and CPU parity check.
+"""Development-only MA/HE/EX PyTorch -> ONNX export and CPU parity check.
 
 The checkpoint is integrity-checked before torch deserialization. Outputs default
 to /tmp so neither weights nor converted graphs enter Git or a distributable.
@@ -29,6 +29,18 @@ MODEL_SPECS = {
         "sha256": "c8fc44d5b14f54cb26c8418d6e40c61c283bf7daae7a1b3fd2ff31923371d94a",
         "threshold": 0.20,
         "task": "hemorrhage_segmentation",
+    },
+    "EX": {
+        "size": 751_909_002,
+        "sha256": "6a4bd1b40749475dbb36a1812e08d5caf3a4fce5d2c90892c0f53ab55e64453e",
+        "threshold": 0.325,
+        "task": "hard_exudate_segmentation",
+    },
+    "CWS": {
+        "size": 771_587_386,
+        "sha256": "c42c9b7754c71c474d9f58587d3fbe63e17deb5611a3f5656e76f0415bd5bba2",
+        "threshold": 0.40,
+        "task": "cotton_wool_spot_segmentation",
     },
 }
 CHECKPOINT_BASE_URL = "https://github.com/asifuddin01/HierarchiRetina/releases/download/v1.0"

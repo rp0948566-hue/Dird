@@ -408,6 +408,134 @@ mod tests {
         verify_local_stage2_lesion_service(Stage2ModelKind::He, "HE");
     }
 
+    #[test]
+    #[ignore = "local-only: set Stage II EX manifest, image and parity fixture paths"]
+    fn local_stage2_ex_runs_through_nonblocking_service_and_matches_reference_mask() {
+        verify_local_stage2_lesion_service(Stage2ModelKind::Ex, "EX");
+    }
+
+    #[test]
+    #[ignore = "local-only: set Stage II CWS manifest, image and parity fixture paths"]
+    fn local_stage2_cws_runs_through_nonblocking_service_and_matches_reference_mask() {
+        verify_local_stage2_lesion_service(Stage2ModelKind::Cws, "CWS");
+    }
+
+    #[test]
+    #[ignore = "local-only: set Stage II VESSEL manifest, image and parity fixture paths"]
+    fn local_stage2_vessel_runs_through_nonblocking_service_and_matches_reference_mask() {
+        verify_local_stage2_lesion_service(Stage2ModelKind::Vessel, "VESSEL");
+    }
+
+    #[test]
+    #[ignore = "local-only: set RETINACARE_STAGE2_{MA,HE,EX,CWS,VESSEL}_{MANIFEST,PARITY_DIR} and _IMAGE"]
+    fn local_stage2_five_masks_run_sequentially_in_fixed_order() {
+        // Models are loaded, run and unloaded one at a time to bound CPU/GPU memory.
+        let image = PathBuf::from(
+            std::env::var_os("RETINACARE_STAGE2_MA_IMAGE")
+                .expect("set RETINACARE_STAGE2_MA_IMAGE to the local technical test image"),
+        );
+        let service = ModelService::new();
+        let order = [
+            (Stage2ModelKind::Ma, "MA"),
+            (Stage2ModelKind::He, "HE"),
+            (Stage2ModelKind::Ex, "EX"),
+            (Stage2ModelKind::Cws, "CWS"),
+            (Stage2ModelKind::Vessel, "VESSEL"),
+        ];
+        let mut source_sha: Option<String> = None;
+        for (model_kind, model_code) in order {
+            let manifest = PathBuf::from(
+                std::env::var_os(format!("RETINACARE_STAGE2_{model_code}_MANIFEST"))
+                    .expect("set lesion or vessel manifest environment variable"),
+            );
+            let parity_dir = PathBuf::from(
+                std::env::var_os(format!("RETINACARE_STAGE2_{model_code}_PARITY_DIR"))
+                    .expect("set parity directory environment variable"),
+            );
+            service.load(manifest, ProviderRequest::Cpu).unwrap();
+            let deadline = Instant::now() + Duration::from_secs(180);
+            let model_id = loop {
+                match service.try_next() {
+                    Ok(ModelEvent::Loaded(Ok(model))) => break model.model_id,
+                    Ok(ModelEvent::Loaded(Err(error))) => {
+                        panic!("{model_code} load failed: {error}")
+                    }
+                    Ok(other) => panic!("unexpected event before {model_code} load: {other:?}"),
+                    Err(TryRecvError::Disconnected) => panic!("model service disconnected"),
+                    Err(TryRecvError::Empty) => {
+                        assert!(Instant::now() < deadline, "{model_code} load timed out");
+                        thread::yield_now();
+                    }
+                }
+            };
+            service
+                .infer_stage2_lesion_image(model_id.clone(), 7, image.clone(), model_kind, None)
+                .unwrap();
+            let deadline = Instant::now() + Duration::from_secs(600);
+            let output = loop {
+                match service.try_next() {
+                    Ok(ModelEvent::Stage2Inference {
+                        model_id: event_model,
+                        result,
+                    }) => {
+                        assert_eq!(event_model, model_id);
+                        break result.unwrap_or_else(|error| {
+                            panic!("Stage II {model_code} inference failed: {error}")
+                        });
+                    }
+                    Ok(other) => panic!("unexpected event during {model_code}: {other:?}"),
+                    Err(TryRecvError::Disconnected) => panic!("model service disconnected"),
+                    Err(TryRecvError::Empty) => {
+                        assert!(
+                            Instant::now() < deadline,
+                            "{model_code} inference timed out"
+                        );
+                        thread::yield_now();
+                    }
+                }
+            };
+            output.validate().unwrap();
+            assert_eq!(output.model_kind, model_kind);
+            assert_eq!(output.examination_id, 7);
+            match &source_sha {
+                None => source_sha = Some(output.source_image_sha256.clone()),
+                Some(sha) => {
+                    assert_eq!(&output.source_image_sha256, sha, "same image for all masks")
+                }
+            }
+            let retinacare_ai_bridge::stage2_contract::MaskPixelData::Binary(mask) = output.data
+            else {
+                panic!("expected binary Stage II {model_code} mask");
+            };
+            let reference = std::fs::read(parity_dir.join(format!(
+                "{}_pytorch_mask.u8",
+                model_code.to_ascii_lowercase()
+            )))
+            .unwrap();
+            assert_eq!(mask, reference, "Rust/PyTorch {model_code} mask mismatch");
+            service.unload(model_id.clone()).unwrap();
+            let deadline = Instant::now() + Duration::from_secs(60);
+            loop {
+                match service.try_next() {
+                    Ok(ModelEvent::Unloaded {
+                        model_id: event_model,
+                        removed,
+                    }) => {
+                        assert_eq!(event_model, model_id);
+                        assert!(removed, "{model_code} session was not released");
+                        break;
+                    }
+                    Ok(other) => panic!("unexpected event after {model_code}: {other:?}"),
+                    Err(TryRecvError::Disconnected) => panic!("model service disconnected"),
+                    Err(TryRecvError::Empty) => {
+                        assert!(Instant::now() < deadline, "{model_code} unload timed out");
+                        thread::yield_now();
+                    }
+                }
+            }
+        }
+    }
+
     fn verify_local_stage2_lesion_service(model_kind: Stage2ModelKind, model_code: &str) {
         let prefix = model_code.to_ascii_lowercase();
         let manifest = PathBuf::from(

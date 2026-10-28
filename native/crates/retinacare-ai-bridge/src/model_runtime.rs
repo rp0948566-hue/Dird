@@ -1,4 +1,8 @@
 //! Loaded-session lifecycle for verified, single-input/single-output ONNX models.
+use crate::stage2_vessel::{
+    VESSEL_PREPROCESSING_VERSION, preprocess_stage2_vessel_image, restore_stage2_vessel_mask,
+    vessel_tta_probabilities,
+};
 use crate::{
     device::ProviderRequest,
     onnx_session::{SessionError, VerifiedSession},
@@ -16,7 +20,10 @@ use crate::{
         MaskPixelData, Stage2InferenceError, Stage2MaskResult, Stage2ModelKind, Stage2Request,
         ThresholdMetadata,
     },
-    stage2_preprocessing::{preprocess_stage2_lesion_image, restore_stage2_lesion_mask},
+    stage2_preprocessing::{
+        Stage2MaskPostprocess, flip_planes, preprocess_stage2_lesion_image,
+        restore_stage2_probability_mask_with, stage2_probabilities_from_logits,
+    },
 };
 
 #[derive(Debug, Error)]
@@ -184,6 +191,7 @@ impl ModelRuntime {
             .get_mut(&request.model_id)
             .ok_or_else(|| ModelRuntimeError::NotLoaded(request.model_id.clone()))?;
         let model = session.model();
+        let side = request.model_kind.input_size() as usize;
         let (expected_model_id, expected_architecture, expected_task, expected_checkpoint_hash) =
             match request.model_kind {
                 Stage2ModelKind::Ma => (
@@ -198,7 +206,24 @@ impl ModelRuntime {
                     "hemorrhage_segmentation",
                     "c8fc44d5b14f54cb26c8418d6e40c61c283bf7daae7a1b3fd2ff31923371d94a",
                 ),
-                _ => return Err(Stage2InferenceError::IncompatibleModel(request.model_kind)),
+                Stage2ModelKind::Cws => (
+                    "hierarchiretina-stage2-cws-hsmoe-aunet",
+                    "HSMoE-AUNet-CWS",
+                    "cotton_wool_spot_segmentation",
+                    "c42c9b7754c71c474d9f58587d3fbe63e17deb5611a3f5656e76f0415bd5bba2",
+                ),
+                Stage2ModelKind::Ex => (
+                    "hierarchiretina-stage2-ex-hsmoe-aunet",
+                    "HSMoE-AUNet-EX",
+                    "hard_exudate_segmentation",
+                    "6a4bd1b40749475dbb36a1812e08d5caf3a4fce5d2c90892c0f53ab55e64453e",
+                ),
+                Stage2ModelKind::Vessel => (
+                    "hierarchiretina-stage2-vessel-swinhrunetpp",
+                    "SwinHRUNet++-vessel",
+                    "vessel_segmentation",
+                    "32bad65f3a1cf099e847fd292ff5ff84199ed0882112c0a22499e423e481422c",
+                ),
             };
         let checkpoint_sha256 = model
             .validation
@@ -215,9 +240,9 @@ impl ModelRuntime {
             || model.version != "1.0.0"
             || model.architecture != expected_architecture
             || model.task != expected_task
-            || model.input_shape != [1, 3, 1024, 1024]
+            || model.input_shape != [1, 3, side, side]
             || model.output_schema != "main_logits"
-            || model.output_shape != [1, 1, 1024, 1024]
+            || model.output_shape != [1, 1, side as i64, side as i64]
             || checkpoint_sha256.as_deref() != Some(expected_checkpoint_hash)
             || source_commit != Some("bf84b1d3c7409d2575dff84c7575c67577493a30")
         {
@@ -227,32 +252,94 @@ impl ModelRuntime {
         let model_sha256 = session.model().sha256.clone();
         let provider = session.actual_provider();
         let started = Instant::now();
-        let prepared = preprocess_stage2_lesion_image(&request.image_path, request.model_kind)?;
-        let logits = session.run(&prepared.tensor)?;
-        let mask = restore_stage2_lesion_mask(
-            &logits,
-            &prepared.transform,
-            prepared.original_width,
-            prepared.original_height,
-            request.model_kind.threshold(),
-        )?;
+        let (image_sha256, original_width, original_height, transform, preprocessing_version, mask) =
+            if request.model_kind == Stage2ModelKind::Vessel {
+                let prepared = preprocess_stage2_vessel_image(&request.image_path)?;
+                let probabilities = vessel_tta_probabilities::<Stage2InferenceError>(
+                    |input| Ok(session.run(input)?),
+                    &prepared.tensor,
+                )?;
+                let mask = restore_stage2_vessel_mask(
+                    &probabilities,
+                    &prepared.model_fov,
+                    &prepared.transform,
+                    &prepared.frame_fov,
+                    prepared.original_width,
+                    prepared.original_height,
+                    request.model_kind.threshold(),
+                )?;
+                (
+                    prepared.image_sha256,
+                    prepared.original_width,
+                    prepared.original_height,
+                    prepared.transform,
+                    VESSEL_PREPROCESSING_VERSION,
+                    mask,
+                )
+            } else {
+                let prepared =
+                    preprocess_stage2_lesion_image(&request.image_path, request.model_kind)?;
+                let probabilities = if request.model_kind.uses_flip_tta() {
+                    // Upstream EX and CWS: mean of identity, horizontal-flip and vertical-flip sigmoid maps.
+                    let identity =
+                        stage2_probabilities_from_logits(&session.run(&prepared.tensor)?)?;
+                    let horizontal = stage2_probabilities_from_logits(&flip_planes(
+                        &session.run(&flip_planes(&prepared.tensor, 3, true))?,
+                        1,
+                        true,
+                    ))?;
+                    let vertical = stage2_probabilities_from_logits(&flip_planes(
+                        &session.run(&flip_planes(&prepared.tensor, 3, false))?,
+                        1,
+                        false,
+                    ))?;
+                    identity
+                        .iter()
+                        .zip(horizontal.iter().zip(vertical.iter()))
+                        .map(|(a, (b, c))| (a + b + c) / 3.0)
+                        .collect()
+                } else {
+                    stage2_probabilities_from_logits(&session.run(&prepared.tensor)?)?
+                };
+                let postprocess = if request.model_kind == Stage2ModelKind::Cws {
+                    Stage2MaskPostprocess::CwsComponents
+                } else {
+                    Stage2MaskPostprocess::Threshold
+                };
+                let mask = restore_stage2_probability_mask_with(
+                    &probabilities,
+                    &prepared.transform,
+                    prepared.original_width,
+                    prepared.original_height,
+                    request.model_kind.threshold(),
+                    postprocess,
+                )?;
+                (
+                    prepared.image_sha256,
+                    prepared.original_width,
+                    prepared.original_height,
+                    prepared.transform,
+                    prepared.preprocessing_version,
+                    mask,
+                )
+            };
         let result = Stage2MaskResult {
             processing_status: crate::stage2_contract::Stage2ProcessingStatus::Complete,
             error: None,
             examination_id: request.examination_id,
-            source_image_sha256: prepared.image_sha256,
+            source_image_sha256: image_sha256,
             laterality: request.laterality,
             model_kind: request.model_kind,
             model_version,
             checkpoint_sha256: checkpoint_sha256
                 .ok_or(Stage2InferenceError::IncompatibleModel(request.model_kind))?,
             model_sha256,
-            original_width: prepared.original_width,
-            original_height: prepared.original_height,
-            mask_width: prepared.original_width,
-            mask_height: prepared.original_height,
-            transform: prepared.transform,
-            preprocessing_version: prepared.preprocessing_version.into(),
+            original_width,
+            original_height,
+            mask_width: original_width,
+            mask_height: original_height,
+            transform,
+            preprocessing_version: preprocessing_version.into(),
             threshold: ThresholdMetadata {
                 value: request.model_kind.threshold(),
                 operator: request.model_kind.threshold_operator(),
@@ -321,6 +408,149 @@ mod tests {
     #[ignore = "local-only: set RETINACARE_STAGE2_HE_MANIFEST and RETINACARE_STAGE2_HE_IMAGE"]
     fn local_he_checkpoint_runs_to_registered_original_frame_mask() {
         verify_local_lesion_runtime(Stage2ModelKind::He, "HE");
+    }
+
+    #[test]
+    #[ignore = "local-only: set RETINACARE_STAGE2_EX_MANIFEST, RETINACARE_STAGE2_EX_IMAGE and RETINACARE_STAGE2_EX_PARITY_DIR"]
+    fn local_ex_checkpoint_runs_to_registered_letterboxed_mask() {
+        verify_local_rect_lesion_runtime(Stage2ModelKind::Ex, "EX");
+    }
+
+    #[test]
+    #[ignore = "local-only: set RETINACARE_STAGE2_CWS_MANIFEST, RETINACARE_STAGE2_CWS_IMAGE and RETINACARE_STAGE2_CWS_PARITY_DIR"]
+    fn local_cws_checkpoint_runs_to_postprocessed_letterboxed_mask() {
+        verify_local_rect_lesion_runtime(Stage2ModelKind::Cws, "CWS");
+    }
+
+    #[test]
+    #[ignore = "local-only: set RETINACARE_STAGE2_VESSEL_MANIFEST, RETINACARE_STAGE2_VESSEL_IMAGE and RETINACARE_STAGE2_VESSEL_PARITY_DIR"]
+    fn local_vessel_checkpoint_runs_to_registered_fov_mask() {
+        let parity_dir = std::path::PathBuf::from(
+            std::env::var("RETINACARE_STAGE2_VESSEL_PARITY_DIR")
+                .expect("set the temporary Python vessel parity-fixture directory"),
+        );
+        let manifest = Path::new(
+            &std::env::var("RETINACARE_STAGE2_VESSEL_MANIFEST")
+                .expect("set path to the verified temporary vessel manifest"),
+        )
+        .to_path_buf();
+        let image_path = Path::new(
+            &std::env::var("RETINACARE_STAGE2_VESSEL_IMAGE")
+                .expect("set path to the local-only retinal technical test image"),
+        )
+        .to_path_buf();
+        let mut runtime = ModelRuntime::default();
+        let loaded = runtime.load(&manifest, ProviderRequest::Cpu).unwrap();
+        let prepared = crate::stage2_vessel::preprocess_stage2_vessel_image(&image_path).unwrap();
+        let reference_input = std::fs::read(parity_dir.join("vessel_input.f32")).unwrap();
+        assert_eq!(reference_input.len(), prepared.tensor.len() * 4);
+        let max_input_diff = prepared
+            .tensor
+            .iter()
+            .zip(reference_input.chunks(4))
+            .map(|(rust, bytes)| (rust - f32::from_le_bytes(bytes.try_into().unwrap())).abs())
+            .fold(0.0f32, f32::max);
+        assert!(
+            max_input_diff <= 1e-5,
+            "vessel tensor max diff {max_input_diff}"
+        );
+        let result = runtime
+            .infer_stage2_image(&Stage2Request {
+                examination_id: 13,
+                image_path,
+                laterality: None,
+                model_kind: Stage2ModelKind::Vessel,
+                model_id: loaded.model_id,
+            })
+            .unwrap();
+        result.validate().unwrap();
+        assert!(matches!(
+            result.transform,
+            crate::stage2_contract::Stage2SpatialTransform::VesselFovSquare { .. }
+        ));
+        let reference_mask = std::fs::read(parity_dir.join("vessel_pytorch_mask.u8")).unwrap();
+        let crate::stage2_contract::MaskPixelData::Binary(rust_mask) = result.data else {
+            panic!("expected binary vessel mask");
+        };
+        let disagreements = rust_mask
+            .iter()
+            .zip(reference_mask.iter())
+            .filter(|(rust, python)| rust != python)
+            .count();
+        eprintln!(
+            "Stage II VESSEL: tensor max_abs={max_input_diff:.9}, mask disagreement px={disagreements}, foreground_pixels={}, frame={}x{}, total_us={}",
+            rust_mask.iter().filter(|&&pixel| pixel == 255).count(),
+            result.original_width,
+            result.original_height,
+            result.elapsed_microseconds,
+        );
+        assert_eq!(disagreements, 0, "Rust/PyTorch vessel mask mismatch");
+    }
+
+    fn verify_local_rect_lesion_runtime(model_kind: Stage2ModelKind, model_code: &str) {
+        let prefix = model_code.to_ascii_lowercase();
+        let parity_dir = std::path::PathBuf::from(
+            std::env::var(format!("RETINACARE_STAGE2_{model_code}_PARITY_DIR"))
+                .expect("set the temporary Python rectangle-lesion parity-fixture directory"),
+        );
+        let manifest = Path::new(
+            &std::env::var(format!("RETINACARE_STAGE2_{model_code}_MANIFEST"))
+                .expect("set path to the verified temporary lesion manifest"),
+        )
+        .to_path_buf();
+        let image_path = Path::new(
+            &std::env::var(format!("RETINACARE_STAGE2_{model_code}_IMAGE"))
+                .expect("set path to the local-only retinal technical test image"),
+        )
+        .to_path_buf();
+        let mut runtime = ModelRuntime::default();
+        let loaded = runtime.load(&manifest, ProviderRequest::Cpu).unwrap();
+        let prepared = preprocess_stage2_lesion_image(&image_path, model_kind).unwrap();
+        let reference_input =
+            std::fs::read(parity_dir.join(format!("{prefix}_input.f32"))).unwrap();
+        assert_eq!(reference_input.len(), prepared.tensor.len() * 4);
+        let max_input_diff = prepared
+            .tensor
+            .iter()
+            .zip(reference_input.chunks(4))
+            .map(|(rust, bytes)| (rust - f32::from_le_bytes(bytes.try_into().unwrap())).abs())
+            .fold(0.0f32, f32::max);
+        assert!(
+            max_input_diff <= 1e-5,
+            "{model_code} tensor max diff {max_input_diff}"
+        );
+        let result = runtime
+            .infer_stage2_image(&Stage2Request {
+                examination_id: 11,
+                image_path,
+                laterality: None,
+                model_kind,
+                model_id: loaded.model_id,
+            })
+            .unwrap();
+        result.validate().unwrap();
+        assert!(matches!(
+            result.transform,
+            crate::stage2_contract::Stage2SpatialTransform::LesionRectLetterbox { .. }
+        ));
+        let reference_mask =
+            std::fs::read(parity_dir.join(format!("{prefix}_pytorch_mask.u8"))).unwrap();
+        let crate::stage2_contract::MaskPixelData::Binary(rust_mask) = result.data else {
+            panic!("expected binary {model_code} mask");
+        };
+        let disagreements = rust_mask
+            .iter()
+            .zip(reference_mask.iter())
+            .filter(|(rust, python)| rust != python)
+            .count();
+        eprintln!(
+            "Stage II {model_code}: tensor max_abs={max_input_diff:.9}, mask disagreement px={disagreements}, foreground_pixels={}, frame={}x{}, total_us={}",
+            rust_mask.iter().filter(|&&pixel| pixel == 255).count(),
+            result.original_width,
+            result.original_height,
+            result.elapsed_microseconds,
+        );
+        assert_eq!(disagreements, 0, "Rust/PyTorch {model_code} mask mismatch");
     }
 
     fn verify_local_lesion_runtime(model_kind: Stage2ModelKind, model_code: &str) {
