@@ -10,4 +10,5 @@ rand = "0.8"
 rusqlite = { version = "0.31", features = ["bundled-sqlcipher-vendored-openssl"] }
 thiserror.workspace = true
 zeroize = { version = "1", features = ["derive"] }
+sha2.workspace = true
 retinacare-domain = { path = "../retinacare-domain" }

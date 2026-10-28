@@ -368,6 +368,32 @@ mod tests {
     }
 
     #[test]
+    fn graph_metadata_that_differs_from_the_manifest_is_refused() {
+        // A model whose real output shape, output name or input shape differs from what the manifest
+        // promises must never reach inference (Stage I would otherwise decode the wrong tensor).
+        for (pointer, replacement) in [
+            ("/outputs/shape", json!([1, 3, 4, 5])),
+            ("/outputs/name", json!("logit")),
+            ("/input/shape", json!([1, 3, 8, 8])),
+            ("/input/name", json!("pixels")),
+        ] {
+            let directory = scratch("metadata-mismatch");
+            let manifest = staged_manifest(&directory);
+            let mut value: serde_json::Value =
+                serde_json::from_str(&fs::read_to_string(&manifest).unwrap()).unwrap();
+            *value.pointer_mut(pointer).unwrap() = replacement;
+            fs::write(&manifest, value.to_string()).unwrap();
+            assert!(
+                matches!(
+                    VerifiedSession::open(&manifest),
+                    Err(SessionError::InputMismatch(_))
+                ),
+                "{pointer}"
+            );
+        }
+    }
+
+    #[test]
     fn reports_a_runtime_failure_on_a_wrong_sized_input() {
         let directory = scratch("run-failure");
         let manifest = staged_manifest(&directory);

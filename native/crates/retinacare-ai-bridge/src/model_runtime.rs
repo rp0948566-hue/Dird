@@ -832,4 +832,137 @@ mod tests {
             "Rust/PyTorch restored mask mismatch for {model_code}"
         );
     }
+
+    fn proc_status_kib(key: &str) -> u64 {
+        std::fs::read_to_string("/proc/self/status")
+            .ok()
+            .and_then(|text| {
+                text.lines()
+                    .find(|line| line.starts_with(key))
+                    .and_then(|line| line.split_whitespace().nth(1)?.parse().ok())
+            })
+            .unwrap_or(0)
+    }
+
+    /// Cold/warm Stage I profile on the real ONNX. Prints a table; asserts only determinism and the
+    /// reported provider, never a speed target.
+    #[test]
+    #[ignore = "local-only: set RETINACARE_STAGE1_MANIFEST and RETINACARE_STAGE1_IMAGE"]
+    fn local_stage1_cold_and_warm_profile_is_deterministic() {
+        use std::time::Instant;
+        let manifest = std::path::PathBuf::from(
+            std::env::var_os("RETINACARE_STAGE1_MANIFEST").expect("set RETINACARE_STAGE1_MANIFEST"),
+        );
+        let image = std::path::PathBuf::from(
+            std::env::var_os("RETINACARE_STAGE1_IMAGE").expect("set RETINACARE_STAGE1_IMAGE"),
+        );
+        let mut logits = Vec::new();
+        let cycles: usize = std::env::var("RETINACARE_PROFILE_CYCLES")
+            .ok()
+            .and_then(|value| value.parse().ok())
+            .unwrap_or(3);
+        for cycle in 1..=cycles {
+            let mut runtime = ModelRuntime::default();
+            let rss_before = proc_status_kib("VmRSS:");
+            let started = Instant::now();
+            let loaded = runtime.load(&manifest, ProviderRequest::Cpu).unwrap();
+            let load_ms = started.elapsed().as_millis();
+            assert_eq!(loaded.provider, crate::device::ActualProvider::Cpu);
+            let mut times = Vec::new();
+            for _ in 0..3 {
+                let out = runtime
+                    .infer_stage1_image(&loaded.model_id, &image)
+                    .unwrap();
+                logits.push(out.gate.raw_logit);
+                println!(
+                    "GATE logit={} score={} decision={:?}",
+                    out.gate.raw_logit, out.gate.screening_score, out.gate.decision
+                );
+                times.push((
+                    out.elapsed_microseconds / 1000,
+                    out.preprocessing_microseconds,
+                ));
+            }
+            println!(
+                "PROFILE cycle={cycle} load_ms={load_ms} infer_ms(total,pre_us)={times:?} rss_before_kib={rss_before} rss_after_kib={} hwm_kib={}",
+                proc_status_kib("VmRSS:"),
+                proc_status_kib("VmHWM:")
+            );
+            assert!(runtime.unload(&loaded.model_id));
+        }
+        assert!(
+            logits
+                .iter()
+                .all(|value| value.to_bits() == logits[0].to_bits()),
+            "Stage I logit must be bit-identical across cold and warm runs: {logits:?}"
+        );
+    }
+    #[cfg(feature = "cuda")]
+    fn gpu_memory_used_mib() -> Option<u64> {
+        let out = std::process::Command::new("nvidia-smi")
+            .args(["--query-gpu=memory.used", "--format=csv,noheader,nounits"])
+            .output()
+            .ok()?;
+        String::from_utf8(out.stdout)
+            .ok()?
+            .lines()
+            .next()?
+            .trim()
+            .parse()
+            .ok()
+    }
+
+    /// Real CUDA proof for Stage I: the session is built with CPU fallback disabled, so success means the
+    /// CUDA provider executed. Compares to the CPU logit and prints timings and GPU memory.
+    #[cfg(feature = "cuda")]
+    #[test]
+    #[ignore = "local-only: needs an NVIDIA GPU, CUDA 12 + cuDNN 9 on LD_LIBRARY_PATH, RETINACARE_STAGE1_MANIFEST/IMAGE"]
+    fn local_stage1_cuda_matches_cpu_and_reports_provider() {
+        use crate::device::ActualProvider;
+        use std::time::Instant;
+        let manifest = std::path::PathBuf::from(
+            std::env::var_os("RETINACARE_STAGE1_MANIFEST").expect("set RETINACARE_STAGE1_MANIFEST"),
+        );
+        let image = std::path::PathBuf::from(
+            std::env::var_os("RETINACARE_STAGE1_IMAGE").expect("set RETINACARE_STAGE1_IMAGE"),
+        );
+        let mut cpu = ModelRuntime::default();
+        let cpu_model = cpu.load(&manifest, ProviderRequest::Cpu).unwrap();
+        let cpu_out = cpu.infer_stage1_image(&cpu_model.model_id, &image).unwrap();
+        assert!(cpu.unload(&cpu_model.model_id));
+        drop(cpu);
+
+        let mib_before = gpu_memory_used_mib();
+        let started = Instant::now();
+        let mut gpu = ModelRuntime::default();
+        let loaded = gpu
+            .load(&manifest, ProviderRequest::Cuda { device_id: 0 })
+            .expect("CUDA session must build with CPU fallback disabled");
+        let load_ms = started.elapsed().as_millis();
+        assert_eq!(loaded.provider, ActualProvider::Cuda { device_id: 0 });
+        let mut runs = Vec::new();
+        for _ in 0..4 {
+            let out = gpu.infer_stage1_image(&loaded.model_id, &image).unwrap();
+            runs.push(out);
+        }
+        let mib_after = gpu_memory_used_mib();
+        println!(
+            "CUDA-PROFILE provider={:?} load_ms={load_ms} infer_ms={:?} gpu_mem_used_mib before={mib_before:?} after={mib_after:?} cpu_logit={} gpu_logits={:?}",
+            loaded.provider,
+            runs.iter()
+                .map(|r| r.elapsed_microseconds / 1000)
+                .collect::<Vec<_>>(),
+            cpu_out.gate.raw_logit,
+            runs.iter().map(|r| r.gate.raw_logit).collect::<Vec<_>>()
+        );
+        for run in &runs {
+            assert!(
+                (run.gate.raw_logit - cpu_out.gate.raw_logit).abs() < 1e-2,
+                "CUDA/CPU logit gap {}",
+                (run.gate.raw_logit - cpu_out.gate.raw_logit).abs()
+            );
+            assert_eq!(run.gate.decision, cpu_out.gate.decision);
+            assert_eq!(run.provider, ActualProvider::Cuda { device_id: 0 });
+        }
+    }
 }

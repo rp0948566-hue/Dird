@@ -177,3 +177,13 @@ were changed. The two repositories' prior uncommitted work remains intact.
 - Rerun: backend fmt/clippy/release pass, tests 97 passed / 0 failed / 17 ignored; GUI fmt/clippy/release pass, tests 166 passed / 0 failed / 2 ignored. Heavy model tests, CUDA, Windows not rerun.
 - Pushes this session (user-approved): GUI `dezine` `4814064`; `AI-Manthan-2.0` `main` force-replaced then fast-forwarded to combined `0997866`; backend to `backend-rust` `01f4cb7`. `Debaq/Dird` still 403.
 - Files: new `README.md`, `.obsidian/app.json`, `Integration/project-state-sync-2026-10-28.md`; edited `00-index`, `active-phase`, `Handoffs/next-actions`, `Integration/repo-topology`. No source code changed. Uncommitted.
+
+## 2026-10-28 - P1 Stage I hardening
+- Added tests: stage1 boundary/sweep/extreme (4), cascade Stage I failure and threshold (2), preprocessing edge cases (5), ONNX graph-vs-manifest mismatch (1), ignored real-model CPU profile and CUDA proof tests. New: `scripts/stage1_cuda_check.sh`, `docs/features/P1-stage1-hardening/README.md`. No GUI code changed.
+- Downloads (user-approved): NVIDIA CUDA 12 and 13 runtime wheels from PyPI into `/home/claude/Desktop/retinacare-cuda/` (outside git).
+- Results and blockers: [[Models/stage-i-screening]], [[Testing/cuda-and-packaging]].
+
+## 2026-10-28 - P2 five-mask persistence
+- New `native/crates/retinacare-persistence/src/masks.rs` (schema v3, atomic save, verified load, RLE); GUI wiring in `engine/{cascade,patient}.rs`, `main.rs`, `ui/cascade_cards.rs`; 11 persistence tests, 4 new GUI flow tests, real 7-model roundtrip in the ignored heavy test.
+- Run now: backend 120/0/18 ignored, GUI 170/0/2 ignored, fmt/clippy/release clean; heavy GUI run 63.7 s, 2826 MiB, five real masks reloaded pixel-identical (save 2.9 ms, load 4.6 ms, DB 86 KB).
+- Evidence and matrix: `docs/features/P2-mask-persistence/README.md`. Nothing committed or pushed. Blocked: labelled Dice/IoU, CUDA, Windows.

@@ -112,6 +112,87 @@ mod tests {
         assert_eq!(below, Stage1GateDecision::NegativeRoute);
     }
 
+    // Adjacent representable floats; the bit step direction flips for negative values.
+    fn next_up(value: f32) -> f32 {
+        let bits = value.to_bits();
+        f32::from_bits(if value >= 0.0 { bits + 1 } else { bits - 1 })
+    }
+
+    fn next_down(value: f32) -> f32 {
+        let bits = value.to_bits();
+        f32::from_bits(if value > 0.0 { bits - 1 } else { bits + 1 })
+    }
+
+    #[test]
+    fn threshold_constant_is_the_pinned_upstream_value() {
+        // manifest value 0.2391715943813324 (f64) rounded to the f32 constant
+        assert_eq!(0.239_171_594_381_332_4_f64 as f32, STAGE1_GATE_THRESHOLD);
+    }
+
+    #[test]
+    fn route_flips_exactly_at_the_adjacent_float_boundary() {
+        let t = STAGE1_GATE_THRESHOLD;
+        assert_eq!(
+            route_for_probability(next_down(t)).unwrap(),
+            Stage1GateDecision::NegativeRoute
+        );
+        assert_eq!(
+            route_for_probability(t).unwrap(),
+            Stage1GateDecision::ContinueCascade
+        );
+        assert_eq!(
+            route_for_probability(next_up(t)).unwrap(),
+            Stage1GateDecision::ContinueCascade
+        );
+    }
+
+    #[test]
+    fn logit_sweep_around_the_threshold_is_monotone_with_exactly_one_flip() {
+        let centre = (STAGE1_GATE_THRESHOLD / (1.0 - STAGE1_GATE_THRESHOLD)).ln();
+        let mut logit = centre;
+        for _ in 0..256 {
+            logit = next_down(logit);
+        }
+        let mut flips = 0;
+        let mut previous = decode_stage1_gate(&[logit]).unwrap().decision;
+        assert_eq!(previous, Stage1GateDecision::NegativeRoute);
+        for _ in 0..512 {
+            logit = next_up(logit);
+            let decoded = decode_stage1_gate(&[logit]).unwrap();
+            // The reported decision must always agree with the reported score.
+            assert_eq!(
+                decoded.decision == Stage1GateDecision::ContinueCascade,
+                decoded.screening_score >= STAGE1_GATE_THRESHOLD
+            );
+            if decoded.decision != previous {
+                flips += 1;
+                assert_eq!(decoded.decision, Stage1GateDecision::ContinueCascade);
+            }
+            previous = decoded.decision;
+        }
+        assert_eq!(flips, 1, "route must flip once and never flip back");
+    }
+
+    #[test]
+    fn extreme_and_signed_zero_logits_never_error_or_misroute() {
+        for (logit, expected) in [
+            (0.0_f32, Stage1GateDecision::ContinueCascade),
+            (-0.0_f32, Stage1GateDecision::ContinueCascade),
+            (f32::MAX, Stage1GateDecision::ContinueCascade),
+            (f32::MIN, Stage1GateDecision::NegativeRoute),
+            (f32::MIN_POSITIVE, Stage1GateDecision::ContinueCascade),
+            (-f32::MIN_POSITIVE, Stage1GateDecision::ContinueCascade),
+            (-1.0, Stage1GateDecision::ContinueCascade),
+            (-1.2, Stage1GateDecision::NegativeRoute),
+        ] {
+            assert_eq!(decode_stage1_gate(&[logit]).unwrap().decision, expected);
+        }
+        assert!(matches!(
+            decode_stage1_gate(&[f32::NEG_INFINITY]),
+            Err(Stage1DecodeError::NonFiniteLogit)
+        ));
+    }
+
     #[test]
     fn rejects_invalid_probabilities() {
         for probability in [f32::NAN, f32::INFINITY, -0.01, 1.01] {

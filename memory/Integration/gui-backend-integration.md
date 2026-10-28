@@ -18,7 +18,7 @@ Binary: `Dird/GUI/Hackthon dezine/rust/target/release/retinacare` (Antigravity e
 ## Persistence (encrypted SQLCipher)
 - `retinacare-persistence`: schema v2 (`PRAGMA user_version`), additive migration with `<db>.pre-v2.bak` copy first, `audit_events` append-only (triggers reject UPDATE/DELETE), `set_examination_analysis`, `set_examination_image`, `get_patient`, `PatientRecord.created_at`.
 - GUI `engine/store.rs` `SharedStore` (Argon2id unlock on a worker thread; locked = explicit error, no plaintext/fixture fallback); `LiveCodexPatientService`, `LiveCodexAuditService` share it. DB path `$RETINACARE_DB_PATH` else `~/.local/share/RetinaCare/database/retinacare.sqlite`.
-- Stored per examination: eye, image path, compact outcome JSON (no pixels). Masks are NOT stored: reopening shows the summary (`restored`) and needs a re-run for masks.
+- Stored per examination: eye, image path, compact outcome JSON (no pixels) plus, since P2, the five verified masks (`mask_runs`/`mask_artifacts`, schema v3). Reopening restores the summary and the masks (`restored`, `masks_restored`) without running a model; a legacy exam or failed verification shows a note and empty panels. Details: [[Backend/mask-storage]].
 
 ## PDF / audit
 - `retinacare-reports`: `render_pdf`, `validate_pdf`, `write_pdf_atomic` (text-only PDF 1.4, temp+fsync+validate+rename). GUI builds content in `engine/report.rs::build_report_document` from verified results only.

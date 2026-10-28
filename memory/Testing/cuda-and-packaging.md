@@ -29,3 +29,6 @@ until measured.
 
 ## Update 2026-10-28
 Every stage in the app reports provider CPU; CUDA was not run and nothing claims it. The runnable artifact is `GUI/Hackthon dezine/rust/target/release/retinacare` (60.9 MB; models and the database live outside it). Models are not bundled; packaging needs a model bundle + hash manifest, the CUDA check, and a Windows run. Idle GUI RSS ~1.4 GB, cascade peak ~2.95 GB (release).
+
+## Update 2026-10-28 (P1-M3 CUDA attempt)
+`--features cuda` builds (ORT 1.31 provider needs CUDA 13 + cuDNN 9; libs live outside git in `/home/claude/Desktop/retinacare-cuda/`, SHA-256 lists there). Provider loads, then fails honestly: `no CUDA-capable device`, because the GPU entered PCI runtime state `error` (nvidia-smi worked at 14:34, then "No devices were found"). CPU fallback is disabled, so no silent CPU run. Needs a reboot or driver reload by the user, then `scripts/stage1_cuda_check.sh`. No GPU timing, parity or VRAM data exists. Details: `docs/features/P1-stage1-hardening/README.md`.

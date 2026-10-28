@@ -21,7 +21,7 @@ One vault for backend + GUI. Read in this order: this note, [[01-claude-start-he
 | Licensing, data limits | [[Models/licensing-and-data]] |
 | Build/test/CUDA/packaging | [[Testing/build-and-test]], [[Testing/cuda-and-packaging]] |
 | Risks, gotchas, decisions | [[Decisions/risks-and-blockers]], [[Decisions/gotchas]], [[Decisions/decisions]] |
-| Backend data/security | [[Backend/data-contracts]], [[Backend/security]] |
+| Backend data/security | [[Backend/data-contracts]], [[Backend/security]], [[Backend/mask-storage]] |
 | GUI notes (Antigravity) | [[GUI/gui-00-index]] |
 
 ## Rules

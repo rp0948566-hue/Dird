@@ -1056,6 +1056,46 @@ mod tests {
     }
 
     #[test]
+    fn every_stage1_failure_kind_ends_failed_without_grade0_or_later_stages() {
+        for kind in [
+            StageFailureKind::InvalidRequest,
+            StageFailureKind::InvalidSourceImage,
+            StageFailureKind::ModelUnavailable,
+            StageFailureKind::ModelIntegrity,
+            StageFailureKind::ModelMismatch,
+            StageFailureKind::IdentityMismatch,
+            StageFailureKind::Inference,
+            StageFailureKind::InvalidOutput,
+            StageFailureKind::Internal,
+        ] {
+            // A strongly negative logit would route to grade 0 if the error were swallowed.
+            let mut fake = Fake::new(-9.0, [5.0, 5.0, -5.0, 5.0]);
+            fake.fail.insert(3, (AnalysisStage::Screening, kind));
+            let (report, _) = run(&mut fake, &request(3), NEVER);
+            assert_eq!(report.state, AnalysisState::Failed, "{kind:?}");
+            assert!(report.cascade_grade.is_none(), "{kind:?}");
+            assert!(report.screening.is_none(), "{kind:?}");
+            assert_eq!(report.failure.unwrap().kind, kind);
+            assert_eq!(fake.stages(), vec![AnalysisStage::Screening], "{kind:?}");
+        }
+    }
+
+    #[test]
+    fn stage1_score_at_threshold_continues_and_just_below_stops_with_no_later_stage() {
+        use retinacare_ai_bridge::stage1::STAGE1_GATE_THRESHOLD;
+        let logit_at = (STAGE1_GATE_THRESHOLD / (1.0 - STAGE1_GATE_THRESHOLD)).ln();
+        for (logit, state, later_stages) in [
+            (logit_at - 1e-3, AnalysisState::NegativeRoute, 0),
+            (logit_at + 1e-3, AnalysisState::Graded, 6),
+        ] {
+            let mut fake = Fake::new(logit, [5.0, 5.0, -5.0, 5.0]);
+            let (report, _) = run(&mut fake, &request(1), NEVER);
+            assert_eq!(report.state, state);
+            assert_eq!(fake.stages().len(), 1 + later_stages);
+        }
+    }
+
+    #[test]
     fn t04_ungradable_reports_no_severity() {
         let mut fake = Fake::new(4.0, [9.0, 9.0, 9.0, -9.0]);
         let (report, _) = run(&mut fake, &request(4), NEVER);

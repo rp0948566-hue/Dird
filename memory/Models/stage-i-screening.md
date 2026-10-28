@@ -29,3 +29,6 @@ unverified. See [implementation and evidence](../../docs/features/P0-01-hierarch
 
 ## Update 2026-10-28
 Stage I is the first step of the live cascade. GUI demo run: score 0.9983 (threshold 0.2391716), raw logit +6.386, 3.8 s on CPU after preload. The GUI preloads the Stage I model at startup (idle GUI RSS ~1.4 GB). The score is not a calibrated probability. Real negative-route behaviour has not been seen on a real image (none available). See [[Integration/gui-backend-integration]].
+
+## Update 2026-10-28 (P1 hardening)
+Evidence: `docs/features/P1-stage1-hardening/README.md`. ONNX and .pth SHA-256 recomputed and equal to the manifest. Routing boundary proven with adjacent-float and 512-step logit sweep tests (0 boundary errors); all 9 Stage I failure kinds end `Failed`, never grade 0. CPU profile (OD-1.png): load 2.1-5.1 s, inference median 4.45 s (n=9), HWM 2.52 GB, logits bit-identical. Finding: the gate does not reject non-fundus synthetic images (black/gray/disc/noise all score 0.72-0.81 and continue); a real negative-route image has still not been seen. Licensed-image acceptance BLOCKED; CUDA BLOCKED, see [[Testing/cuda-and-packaging]].

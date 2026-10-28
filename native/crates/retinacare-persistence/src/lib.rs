@@ -1,5 +1,11 @@
 //! Encrypted local database with repository methods; no generic SQL API.
 
+mod masks;
+pub use masks::{
+    MASK_FORMAT_VERSION, MASK_KINDS, MaskExpectation, MaskRunInput, StoredMask, StoredMaskRun,
+    decode_mask, encode_mask,
+};
+
 use argon2::{Algorithm, Argon2, Params, Version};
 use rand::{RngCore, rngs::OsRng};
 use retinacare_domain::Examination;
@@ -33,14 +39,19 @@ pub enum StoreError {
     InvalidRotation,
     #[error("input is empty or exceeds the allowed length")]
     InvalidInput,
+    #[error("stored masks failed verification: {0}")]
+    MaskIntegrity(String),
+    #[error("stored masks belong to a different patient, eye or image")]
+    MaskMismatch,
     #[error(
         "database key changed; close and reopen with the new password to recover salt metadata: {0}"
     )]
     SaltCommitAfterRekey(std::io::Error),
 }
 
-/// Current on-disk schema version (`PRAGMA user_version`). v2 adds the append-only audit ledger.
-pub const SCHEMA_VERSION: i64 = 2;
+/// Current on-disk schema version (`PRAGMA user_version`). v2 adds the append-only audit ledger,
+/// v3 the five-mask run/artifact tables.
+pub const SCHEMA_VERSION: i64 = 3;
 
 /// One append-only audit record. Holds identifiers and statuses only, never image bytes or secrets.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -428,24 +439,29 @@ impl SqlCipherStore {
                 fs::copy(&self.database_path, &backup)?;
             }
         }
-        let applied = self.connection.execute_batch(
-            "BEGIN;
-             CREATE TABLE IF NOT EXISTS audit_events (
-               id INTEGER PRIMARY KEY,
-               recorded_at TEXT NOT NULL,
-               event_type TEXT NOT NULL,
-               patient_id INTEGER,
-               examination_id INTEGER,
-               status TEXT NOT NULL DEFAULT '',
-               detail TEXT NOT NULL DEFAULT ''
-             );
-             CREATE TRIGGER IF NOT EXISTS audit_events_no_update BEFORE UPDATE ON audit_events
-               BEGIN SELECT RAISE(ABORT, 'audit_events is append-only'); END;
-             CREATE TRIGGER IF NOT EXISTS audit_events_no_delete BEFORE DELETE ON audit_events
-               BEGIN SELECT RAISE(ABORT, 'audit_events is append-only'); END;
-             PRAGMA user_version = 2;
-             COMMIT;",
-        );
+        let mut script = String::from("BEGIN;");
+        if version < 2 {
+            script.push_str(
+                "CREATE TABLE IF NOT EXISTS audit_events (
+                   id INTEGER PRIMARY KEY,
+                   recorded_at TEXT NOT NULL,
+                   event_type TEXT NOT NULL,
+                   patient_id INTEGER,
+                   examination_id INTEGER,
+                   status TEXT NOT NULL DEFAULT '',
+                   detail TEXT NOT NULL DEFAULT ''
+                 );
+                 CREATE TRIGGER IF NOT EXISTS audit_events_no_update BEFORE UPDATE ON audit_events
+                   BEGIN SELECT RAISE(ABORT, 'audit_events is append-only'); END;
+                 CREATE TRIGGER IF NOT EXISTS audit_events_no_delete BEFORE DELETE ON audit_events
+                   BEGIN SELECT RAISE(ABORT, 'audit_events is append-only'); END;",
+            );
+        }
+        if version < 3 {
+            script.push_str(masks::V3_SQL);
+        }
+        script.push_str(&format!("PRAGMA user_version = {SCHEMA_VERSION}; COMMIT;"));
+        let applied = self.connection.execute_batch(&script);
         if let Err(error) = applied {
             // A failed statement leaves the transaction open: undo it so nothing half-applied stays.
             let _ = self.connection.execute_batch("ROLLBACK");

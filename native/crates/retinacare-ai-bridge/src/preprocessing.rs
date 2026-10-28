@@ -412,6 +412,102 @@ mod tests {
         ));
     }
 
+    fn encode(ext: &str, image: &core::Mat) -> Vec<u8> {
+        let mut encoded = core::Vector::<u8>::new();
+        imgcodecs::imencode(ext, image, &mut encoded, &core::Vector::new()).unwrap();
+        encoded.to_vec()
+    }
+
+    fn solid(rows: i32, cols: i32, kind: i32, value: f64) -> core::Mat {
+        core::Mat::new_rows_cols_with_default(rows, cols, kind, core::Scalar::all(value)).unwrap()
+    }
+
+    fn crc32(bytes: &[u8]) -> u32 {
+        let mut crc = !0u32;
+        for byte in bytes {
+            crc ^= u32::from(*byte);
+            for _ in 0..8 {
+                crc = if crc & 1 == 1 {
+                    (crc >> 1) ^ 0xEDB8_8320
+                } else {
+                    crc >> 1
+                };
+            }
+        }
+        !crc
+    }
+
+    #[test]
+    fn truncated_png_and_jpeg_are_rejected_without_a_tensor() {
+        let image = solid(96, 96, core::CV_8UC3, 120.0);
+        for ext in [".png", ".jpg"] {
+            let full = encode(ext, &image);
+            let cut = &full[..full.len() / 2];
+            assert!(preprocess_stage1_bytes(cut).is_err(), "{ext} truncated");
+        }
+    }
+
+    #[test]
+    fn unsupported_encodings_are_rejected_as_unsupported_format() {
+        let image = solid(32, 32, core::CV_8UC3, 120.0);
+        for ext in [".bmp", ".tiff"] {
+            assert!(
+                matches!(
+                    preprocess_stage1_bytes(&encode(ext, &image)),
+                    Err(PreprocessError::UnsupportedFormat)
+                ),
+                "{ext}"
+            );
+        }
+        assert!(matches!(
+            preprocess_stage1_bytes(&[]),
+            Err(PreprocessError::UnsupportedFormat | PreprocessError::Header(_))
+        ));
+    }
+
+    #[test]
+    fn alpha_gray_and_sixteen_bit_pngs_decode_to_a_finite_three_channel_tensor() {
+        // IMREAD_COLOR folds alpha, gray and 16-bit sources into 8-bit BGR; none may panic or yield NaN.
+        for (kind, value) in [
+            (core::CV_8UC4, 90.0),
+            (core::CV_8UC1, 90.0),
+            (core::CV_16UC3, 20_000.0),
+        ] {
+            let bytes = encode(".png", &solid(64, 64, kind, value));
+            let out = preprocess_stage1_bytes(&bytes).unwrap();
+            assert_eq!(out.tensor.len(), 3 * 768 * 768);
+            assert!(out.tensor.iter().all(|v| v.is_finite()), "kind {kind}");
+        }
+    }
+
+    #[test]
+    fn tiny_and_blank_images_do_not_crash_or_produce_non_finite_values() {
+        // A 1x1 frame and an all-black frame have no detectable field of view; the gate score for such
+        // input is meaningless, but preprocessing must stay finite and bounded.
+        for (rows, cols, value) in [(1, 1, 128.0), (64, 64, 0.0), (64, 64, 255.0)] {
+            let bytes = encode(".png", &solid(rows, cols, core::CV_8UC3, value));
+            let out = preprocess_stage1_bytes(&bytes).unwrap();
+            assert!(
+                out.tensor.iter().all(|v| v.is_finite()),
+                "{rows}x{cols} {value}"
+            );
+        }
+    }
+
+    #[test]
+    fn header_claiming_huge_dimensions_is_rejected_before_any_pixel_decode() {
+        let mut png = encode(".png", &solid(8, 8, core::CV_8UC3, 10.0));
+        // IHDR data starts at byte 16 (width, height); its CRC covers bytes 12..29.
+        png[16..20].copy_from_slice(&40_000u32.to_be_bytes());
+        png[20..24].copy_from_slice(&40_000u32.to_be_bytes());
+        let crc = crc32(&png[12..29]);
+        png[29..33].copy_from_slice(&crc.to_be_bytes());
+        assert!(matches!(
+            preprocess_stage1_bytes(&png),
+            Err(PreprocessError::ImageTooLarge { .. })
+        ));
+    }
+
     #[test]
     #[ignore = "local-only: requires an authorized image path and Python/OpenCV reference outputs"]
     fn local_fundus_matches_python_tensor_and_typed_onnx_result() {
