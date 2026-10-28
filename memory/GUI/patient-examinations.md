@@ -24,3 +24,6 @@ Visual desktop verification verified across 6 authentic Linux desktop screenshot
 
 ## Update 2026-10-28
 `LiveCodexPatientService` now serves real data from the SQLCipher store (unlock form on the Patients page; `DatabaseLocked` until unlocked). New exam stores eye, image path and (after a verified run) the analysis summary. Selecting a patient or exam clears the loaded image and results. Default operator is the OS user. Replaces the "backend handoff requires Codex..." items above.
+
+## Update 2026-10-28 (Patient Directory redesign)
+Directory page restyled (premium minimal dark, amber accents, no blue buttons). Code: `ui/patients.rs` (`render_patient_directory`, `render_directory_stats`, `render_locked_database_notice`, `render_patient_cards` as table rows, `render_empty_directory_state`), tokens `DIR_*` in `ui/theme.rs`, read-only `directory_stats()` and `refresh_directory()` on `PatientService`. Removed: header lock badge and breadcrumb bar on the directory. Stats are computed from the unlocked store (locked shows "Locked"); DOB and gender have no column because they are not stored. Evidence: `docs/features/GUI-PATIENTS-REDESIGN/`. Profile and exam pages are unchanged (still blue).

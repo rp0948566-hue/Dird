@@ -26,3 +26,5 @@ P1 Stage I hardening (2026-10-28): hashes, routing, failure paths and CPU profil
 P2 mask persistence (2026-10-28): engineering COMPLETE and DESKTOP-VERIFIED on a synthetic exam (save, close, relaunch, unlock, restore with no model run). Commits: parent `a3c7b27` (local, 6 ahead of Debaq/Dird main), GUI `1565326` pushed to origin `dezine`. CUDA, Windows, labelled metrics, real power-loss and full-disk BLOCKED. Evidence: `docs/features/P2-mask-persistence/README.md` and `evidence/`.
 
 Next: [[Handoffs/next-actions]].
+
+Patients page redesign (2026-10-28): Directory restyled and verified in the live app; uncommitted in the GUI repo. See [[GUI/patient-examinations]].

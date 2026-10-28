@@ -193,3 +193,8 @@ were changed. The two repositories' prior uncommitted work remains intact.
 - Evidence: `docs/features/P2-mask-persistence/evidence/` (sanitized screenshots, app logs, test logs).
 - GUI commit `1565326` on `dezine`, pushed to origin (AI-Manthan-2.0); remote ref verified. Backend `a3c7b27` local only.
 - Tests rerun: backend 120/0/18, GUI 170/0/2; fmt, clippy, release, diff-check clean.
+
+## 2026-10-28 - Patient Directory redesign (GUI, uncommitted)
+- Files: GUI `rust/src/ui/patients.rs`, `ui/theme.rs`, `engine/patient.rs`. No backend or AI code changed.
+- Verified: fmt, clippy -D warnings, GUI tests 170 passed / 2 ignored, release build; real desktop screenshots at 1600x900, 1280x820, 1024x768, 700x650 plus locked, first-use, empty, no-match and filter states; register, search, filters and refresh driven in the live app. Evidence: `docs/features/GUI-PATIENTS-REDESIGN/`.
+- Not committed or pushed. Not redesigned: profile, exam detail, Previous Chats, Timeline, Report.
