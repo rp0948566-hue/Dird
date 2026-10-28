@@ -86,6 +86,28 @@ validation/aptos_markers/
 validation/__pycache__/
 validation/.claude/
 
+# RetinaCare native build outputs, Python environments, models and local records
+native/target/
+dist/
+ai_engine/.venv/
+ai_engine/**/__pycache__/
+ai_engine/**/*.pyc
+models/**/*.pt
+models/**/*.pth
+models/**/*.onnx
+models/**/*.gguf
+datasets/**
+!datasets/README.md
+*.sqlite
+
 # Internal-only docs (not for the public repo)
 AUDIT.md
 docs/internal/sample-report-2026-01-05.pdf
+
+# Vendored agent skills (clone pinned in AGENTS.md; never commit a nested repo)
+skills/vendor/
+
+# Local analysis snapshots and generated Python bytecode
+.enola/
+__pycache__/
+*.py[cod]

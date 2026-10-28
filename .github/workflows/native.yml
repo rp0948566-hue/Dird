@@ -1,0 +1,31 @@
+name: RetinaCare native foundation
+
+on:
+  push:
+    paths:
+      - 'native/**'
+      - 'ai_engine/**'
+      - '.github/workflows/native.yml'
+  pull_request:
+    paths:
+      - 'native/**'
+      - 'ai_engine/**'
+      - '.github/workflows/native.yml'
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s ai_engine/tests -v
+
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
+      - run: cargo test --workspace --manifest-path native/Cargo.toml

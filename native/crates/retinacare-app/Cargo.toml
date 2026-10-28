@@ -1,0 +1,12 @@
+[package]
+name = "retinacare-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+retinacare-ai-bridge = { path = "../retinacare-ai-bridge" }
+retinacare-domain = { path = "../retinacare-domain" }
+serde_json.workspace = true
+retinacare-persistence = { path = "../retinacare-persistence" }
+zeroize = "1"

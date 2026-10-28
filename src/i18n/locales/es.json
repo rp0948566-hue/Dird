@@ -39,7 +39,8 @@
     "cancel": "Cancelar",
     "delete": "Eliminar",
     "error": {
-      "dbBlocked": "Por favor cierra otras pestañas de esta aplicación para permitir la actualización de la base de datos."
+      "dbBlocked": "Por favor cierra otras pestañas de esta aplicación para permitir la actualización de la base de datos.",
+      "desktopRuntimeRequired": "La base de datos cifrada de pacientes solo está disponible en la aplicación de escritorio DIRD+. Abre la aplicación de escritorio para continuar."
     }
   },
   "messages": {

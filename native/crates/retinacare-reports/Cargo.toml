@@ -1,0 +1,9 @@
+[package]
+name = "retinacare-reports"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+retinacare-domain = { path = "../retinacare-domain" }
+serde.workspace = true

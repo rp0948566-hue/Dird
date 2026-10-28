@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { dbOpen, dbClose, dbExists, dbIsOpen, dbChangePassword } from '@/lib/db-sql/client';
+import { isTauriRuntime } from '@/lib/tauri-runtime';
 
-export type AuthStatus = 'checking' | 'first-run' | 'locked' | 'unlocked';
+export type AuthStatus = 'checking' | 'first-run' | 'locked' | 'unlocked' | 'unavailable';
 
 interface AuthState {
   status: AuthStatus;
@@ -23,6 +24,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   exportPassphrase: null,
 
   checkBoot: async () => {
+    if (!isTauriRuntime()) {
+      set({ status: 'unavailable', error: null });
+      return;
+    }
     try {
       if (await dbIsOpen()) {
         set({ status: 'unlocked', error: null });

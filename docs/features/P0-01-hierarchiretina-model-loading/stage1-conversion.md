@@ -1,0 +1,11 @@
+# Stage I conversion and parity evidence
+
+The local manifest describes the upstream HierarchiRetina v1.0 Stage I ConvNeXt V2-L screening gate. Its source checkpoint identity is SHA-256 `89fd275b1624f840bb20f63994710e75e2c4d5d56635011d4ff8e69f3eb60cff`, as published by the [upstream release](https://github.com/asifuddin01/HierarchiRetina/releases/tag/v1.0). The conversion helper is `scripts/stage1_export_parity.py`; it uses the upstream `preprocess_gate`, exports ONNX opset 17, checks the graph, then compares PyTorch and Python ONNX Runtime logits on deterministic inputs.
+
+The present ONNX file is 807,176,466 bytes and SHA-256 `9ad51e1f428dc59ab49f1f49e8f68a84cd23d8fd4c2c461b45b06bcc726880ac`; its SHA matches `models/stage1_convnextv2l_768/manifest.json`. The manifest records max absolute PyTorch/ONNX logit difference `4.76837158203125e-07` against tolerance `0.001`, upstream source commit `27f49f5ccc1d6297903dd651cef8a660eecc48ce`, and `clinical_validation: none`.
+
+On 2026-10-28, the locally present `.pth` checkpoint was independently SHA-256 verified against the upstream v1.0 release: `89fd275b1624f840bb20f63994710e75e2c4d5d56635011d4ff8e69f3eb60cff`. The exact upstream source checkout is commit `27f49f5ccc1d6297903dd651cef8a660eecc48ce`. No checkpoint or model was downloaded.
+
+The parity helper had a syntax error and its default mode rewrites ONNX, manifest and golden files. It was repaired and gained `--verify-existing`, which checks those existing artifact identities and runs parity without writing them. Both saved synthetic inputs passed PyTorch-vs-ONNX Runtime parity: maximum absolute logit error `7.153e-7` (tolerance `0.001`); the existing Rust golden test then passed. The ONNX, manifest and golden artifact hashes were preserved. This proves numerical agreement only on these synthetic cases; it is not a retinal evaluation, threshold-boundary test or clinical validation.
+
+The available PyTorch build is CPU-only (`2.14.1+cpu`). CUDA could not be tested: `nvidia-smi` cannot communicate with the driver and `/dev/nvidia*` is not exposed. Rust still requires a production implementation of the upstream image preprocessing and typed Stage I output decoding before this gate can be called end-to-end complete.

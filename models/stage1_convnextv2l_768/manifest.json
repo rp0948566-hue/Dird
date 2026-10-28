@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "model_id": "hierarchiretina-stage1-convnextv2l-768",
+  "version": "1.0.0",
+  "task": "dr_screening_gate",
+  "architecture": "convnextv2_large+gem+attn_pool+mlp_head",
+  "checkpoint": "stage1.onnx",
+  "size_bytes": 807176466,
+  "sha256": "9ad51e1f428dc59ab49f1f49e8f68a84cd23d8fd4c2c461b45b06bcc726880ac",
+  "license": "CC-BY-NC-4.0 weights; MIT code",
+  "source_url": "https://github.com/asifuddin01/HierarchiRetina/releases/download/v1.0/stage1_convnextv2l_768_best_auc_model.pth",
+  "input": {
+    "name": "image",
+    "data_type": "float32",
+    "shape": [
+      1,
+      3,
+      768,
+      768
+    ],
+    "color_space": "RGB",
+    "normalization": "imagenet mean/std after upstream preprocess_gate (BGR uint8 pipeline)"
+  },
+  "outputs": {
+    "schema": "single_logit",
+    "name": "logit",
+    "data_type": "float32",
+    "shape": [1, 1],
+    "activation": "sigmoid applied by caller",
+    "gate_threshold": 0.2391715943813324,
+    "positive_route": "DR grades 1-5 including ungradable; negative route: grade 0"
+  },
+  "validation": {
+    "report": "docs/features/P0-01-hierarchiretina-model-loading/stage1-conversion.md",
+    "upstream_checkpoint_sha256": "89fd275b1624f840bb20f63994710e75e2c4d5d56635011d4ff8e69f3eb60cff",
+    "upstream_commit": "27f49f5ccc1d6297903dd651cef8a660eecc48ce",
+    "parity_torch_vs_onnxruntime_max_abs_logit": 4.76837158203125e-07,
+    "parity_tolerance": 0.001,
+    "clinical_validation": "none in this repository; weights are CC BY-NC 4.0 (non-commercial)"
+  }
+}

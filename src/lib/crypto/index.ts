@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invokeTauri } from '@/lib/tauri-runtime';
 
 export const SALT_LEN = 16;
 export const KEY_LEN = 32;
@@ -29,7 +29,7 @@ export function hexToBytes(hex: string): Uint8Array {
 }
 
 export async function randomHex(n: number): Promise<string> {
-  return invoke<string>('crypto_random_hex', { n });
+  return invokeTauri<string>('crypto_random_hex', { n });
 }
 
 export async function randomBytes(n: number): Promise<Uint8Array> {
@@ -37,7 +37,7 @@ export async function randomBytes(n: number): Promise<Uint8Array> {
 }
 
 export async function deriveKey(password: string, salt: Uint8Array): Promise<Uint8Array> {
-  const dto = await invoke<DerivedKey>('crypto_derive_key', {
+  const dto = await invokeTauri<DerivedKey>('crypto_derive_key', {
     password,
     saltHex: bytesToHex(salt),
   });
@@ -49,7 +49,7 @@ export async function aeadSeal(
   plaintext: Uint8Array,
   aad: Uint8Array = new Uint8Array(),
 ): Promise<{ nonce: Uint8Array; ciphertext: Uint8Array }> {
-  const dto = await invoke<Sealed>('crypto_aead_seal', {
+  const dto = await invokeTauri<Sealed>('crypto_aead_seal', {
     keyHex: bytesToHex(key),
     plaintextHex: bytesToHex(plaintext),
     aadHex: bytesToHex(aad),
@@ -66,7 +66,7 @@ export async function aeadOpen(
   ciphertext: Uint8Array,
   aad: Uint8Array = new Uint8Array(),
 ): Promise<Uint8Array> {
-  const hex = await invoke<string>('crypto_aead_open', {
+  const hex = await invokeTauri<string>('crypto_aead_open', {
     keyHex: bytesToHex(key),
     nonceHex: bytesToHex(nonce),
     ciphertextHex: bytesToHex(ciphertext),

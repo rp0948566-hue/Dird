@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invokeTauri } from '@/lib/tauri-runtime';
 
 export type SqlParam =
   | { t: 'null' }
@@ -63,31 +63,31 @@ export function rowToObject(columns: string[], row: SqlCell[]): Record<string, u
 }
 
 export async function dbOpen(password: string): Promise<void> {
-  await invoke('db_open', { password });
+  await invokeTauri('db_open', { password });
 }
 
 export async function dbClose(): Promise<void> {
-  await invoke('db_close');
+  await invokeTauri('db_close');
 }
 
 export async function dbIsOpen(): Promise<boolean> {
-  return invoke<boolean>('db_is_open');
+  return invokeTauri<boolean>('db_is_open');
 }
 
 export async function dbExists(): Promise<boolean> {
-  return invoke<boolean>('db_exists');
+  return invokeTauri<boolean>('db_exists');
 }
 
 export async function dbSchemaVersion(): Promise<number | null> {
-  return invoke<number | null>('db_schema_version');
+  return invokeTauri<number | null>('db_schema_version');
 }
 
 export async function dbExecute(sql: string, params: SqlParam[] = []): Promise<ExecResult> {
-  return invoke<ExecResult>('db_execute', { sql, params });
+  return invokeTauri<ExecResult>('db_execute', { sql, params });
 }
 
 export async function dbQuery(sql: string, params: SqlParam[] = []): Promise<QueryResult> {
-  return invoke<QueryResult>('db_query', { sql, params });
+  return invokeTauri<QueryResult>('db_query', { sql, params });
 }
 
 export async function dbQueryAll<T = Record<string, unknown>>(
@@ -108,5 +108,5 @@ export async function dbQueryOne<T = Record<string, unknown>>(
 }
 
 export async function dbChangePassword(newPassword: string): Promise<void> {
-  await invoke('db_change_password_with_handle', { newPassword });
+  await invokeTauri('db_change_password_with_handle', { newPassword });
 }

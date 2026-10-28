@@ -1,0 +1,69 @@
+name: RetinaCare native distributions
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['retinacare-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact: RetinaCare-Ubuntu-x86_64
+          - os: windows-2025
+            artifact: RetinaCare-Windows-x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy,rustfmt
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Linux native dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev xvfb
+      - name: Install test image dependency
+        run: python -m pip install --only-binary=:all: Pillow==13.0.0
+      - name: Python tests
+        run: python -m unittest discover -s ai_engine/tests -v
+      - name: Rust quality gates
+        shell: bash
+        run: |
+          cargo fmt --manifest-path native/Cargo.toml --all -- --check
+          cargo clippy --workspace --manifest-path native/Cargo.toml --all-targets -- -D warnings
+          cargo test --workspace --manifest-path native/Cargo.toml
+      - name: Package Ubuntu
+        if: runner.os == 'Linux'
+        run: bash scripts/package-ubuntu.sh
+      - name: Verify Ubuntu GUI lifecycle and navigation
+        if: runner.os == 'Linux'
+        run: xvfb-run -a dist/RetinaCare-Ubuntu/RetinaCare --gui-smoke-test dist/RetinaCare-Ubuntu/gui-smoke-test.json
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/package-windows.ps1
+      - name: Verify Windows GUI lifecycle and navigation
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ./dist/RetinaCare/RetinaCare.exe -ArgumentList '--gui-smoke-test','dist/RetinaCare/gui-smoke-test.json' -PassThru -Wait
+          if ($process.ExitCode -ne 0) { throw "GUI smoke exited $($process.ExitCode)" }
+          $report = Get-Content ./dist/RetinaCare/gui-smoke-test.json | ConvertFrom-Json
+          if (!$report.passed) { throw 'GUI smoke report failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            dist/${{ matrix.artifact }}.*
+            dist/RetinaCare*/smoke-test.json
+            dist/RetinaCare*/gui-smoke-test.json
+          if-no-files-found: error
+          retention-days: 30

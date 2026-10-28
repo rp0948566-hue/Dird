@@ -1,0 +1,17 @@
+[package]
+name = "retinacare-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "RetinaCare"
+path = "src/main.rs"
+
+[dependencies]
+eframe = { version = "0.37", default-features = false, features = ["glow", "default_fonts", "accesskit", "x11", "wayland"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "tiff", "bmp", "ico"] }
+rfd = "0.17"
+retinacare-app = { path = "../retinacare-app" }
+serde_json.workspace = true
+zeroize = "1"

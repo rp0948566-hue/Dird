@@ -13,6 +13,10 @@
 
 > **Important notice:** DIRD+ is a research-and-development system. It is **not** an approved medical device and must **not** be used as the sole diagnostic criterion in real clinical settings. Every finding must be reviewed by a qualified ophthalmologist.
 
+## RetinaCare native migration
+
+An independent native Rust/eframe application is being implemented in [`native/`](native/README.md), alongside the preserved legacy DIRD+ tree. Its persistent local Python worker lives in [`ai_engine/`](ai_engine/README.md). Native patient/examination storage, worker IPC, Ubuntu packaging, and a cross-built Windows portable package are implemented. Trained inference, Windows execution, CUDA, and RTX 5070 performance remain unverified. See [`docs/migration-progress.md`](docs/migration-progress.md). The original React/Tauri application remains the existing released implementation.
+
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg)](LICENSE) [![DOI](https://zenodo.org/badge/1114058644.svg)](https://doi.org/10.5281/zenodo.19666272) [![Website](https://img.shields.io/badge/Website-debaq.github.io%2FDird-10b981)](https://debaq.github.io/Dird/) [![DPG](https://img.shields.io/badge/Digital%20Public%20Good-nominee-orange)](https://digitalpublicgoods.net/standard)
 
 <p align="center">

@@ -39,7 +39,8 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "error": {
-      "dbBlocked": "Please close other tabs of this application to allow the database update."
+      "dbBlocked": "Please close other tabs of this application to allow the database update.",
+      "desktopRuntimeRequired": "The encrypted patient database is available only in the DIRD+ desktop app. Open the desktop app to continue."
     }
   },
   "messages": {

@@ -35,6 +35,22 @@ export interface ImportResult {
   import_type?: 'patient' | 'session' | 'full'
 }
 
+type ImportTransaction = (work: () => Promise<void>) => Promise<void>;
+
+/** Turns returned import failures into transaction failures so partial writes roll back. */
+export async function runAtomicImport(
+  transaction: ImportTransaction,
+  run: () => Promise<ImportResult>,
+): Promise<ImportResult> {
+  let result: ImportResult | undefined;
+  await transaction(async () => {
+    result = await run();
+    if (!result.success) throw new Error(result.error || 'Import failed');
+  });
+  if (!result) throw new Error('Import completed without a result');
+  return result;
+}
+
 
 
 
@@ -1025,23 +1041,33 @@ export async function importDirdFile(
     const metadataContent = await metadataFile.async('text');
     const metadata: DirdExportMetadata = JSON.parse(metadataContent);
 
-    switch (metadata.export_type) {
-      case 'patient':
-        if (!targetPatientId) return importPatientZip(zip, metadata);
-        return importSessionsToPatient(zip, metadata, targetPatientId);
-    
-      case 'session':
-        if (!targetPatientId) {
-          throw new Error('Target patient ID is required for session import');
+    return await runAtomicImport(
+      work => db.transaction('rw', [
+        db.patients,
+        db.sessions,
+        db.images,
+        db.detections,
+        db.segmentations,
+        db.measurements,
+        db.imageClassifications,
+        db.reports,
+      ], work),
+      async () => {
+        switch (metadata.export_type) {
+          case 'patient':
+            return targetPatientId
+              ? importSessionsToPatient(zip, metadata, targetPatientId)
+              : importPatientZip(zip, metadata);
+          case 'session':
+            if (!targetPatientId) throw new Error('Target patient ID is required for session import');
+            return importSessionZip(zip, metadata, targetPatientId);
+          case 'full':
+            return importFullZip(zip, metadata);
+          default:
+            throw new Error('Unsupported export type');
         }
-        return importSessionZip(zip, metadata, targetPatientId);
-    
-      case 'full':
-        return importFullZip(zip, metadata);
-    
-      default:
-        throw new Error('Unsupported export type');
-    }
+      },
+    );
 
   } catch (error) {
 
