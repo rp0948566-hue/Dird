@@ -26,3 +26,8 @@ Verified from the pinned source (not from the paper alone):
 
 Do not fabricate a grade, probabilities or heatmaps. No clinical claim. Paper ablation reports weak mask reliance, so make no causal claim about lesion masks. See
 [[Models/model-pipeline]], [[Backend/data-contracts]], [[Decisions/risks-and-blockers]], [[Handoffs/next-actions]].
+
+## Update 2026-10-28: cascade integrated, fold 0 only
+- M5A done: `ModelService::analyze` runs Stage I -> five masks -> fold 0 (`retinacare-app/src/cascade.rs`). Negative Stage I route skips II/III (grade 0 from the gate); ungradable overrides severity; cancelled/failed runs never carry a grade.
+- The GUI shows the result with the banner "SINGLE-FOLD TECHNICAL TEST (LG-DRG fold 0) - RESEARCH ONLY" and stores a compact summary with the exam. Demo image result: technical grade 3, gradable probability 1.000, Stage III 1.8 s on CPU.
+- Folds 1-4, ensemble (M5B), CUDA, licensed-image acceptance, explainability (Phase 4) remain open. See [[Integration/gui-backend-integration]].

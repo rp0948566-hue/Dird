@@ -48,3 +48,10 @@ but this audit did not inspect screenshots or launch the GUI. See
 ## Test run 2026-10-28 (after M5A cascade)
 
 `cargo test --workspace`: 90 passed, 0 failed, 17 ignored. fmt, strict Clippy, release build and `git diff --check` pass. Heavy tests run individually with env vars and all passed: ai-bridge MA, HE, EX, CWS, VESSEL, Stage III fold 0 and eight-channel parity (7); app-service MA, HE, EX, CWS, VESSEL and the sequential five-mask run (6); full real cascade `local_full_cascade_technical_trace_matches_references` (1, env `RETINACARE_CASCADE_*`). The Stage I local test needs `RETINACARE_STAGE1_IMAGE` and was not run.
+
+## Latest verified run 2026-10-28 (integration task)
+Backend (`Dird/native`): fmt, clippy `-D warnings`, release build pass; `cargo test --workspace` **97 passed, 0 failed, 17 ignored**.
+GUI (`Dird/GUI/Hackthon dezine/rust`): fmt, clippy `-D warnings`, release build pass; `cargo test` **166 passed, 0 failed, 2 ignored**; `cargo test -- --ignored` (real Stage I, real 7-model cascade through the GUI adapter) 2 passed. `git diff --check` clean in both repos.
+Desktop: release binary driven under Xvfb with real clicks/typing; screenshots at 1280x820, 1024x768, 700x650; restart persistence; PDF opened by an independent reader. Evidence folder: `Dird/docs/features/GUI-BACKEND-INTEGRATION/` (42 checks + 30 edge cases).
+Commits (local, not pushed): parent `45f4feb`, GUI `574f8f9`.
+Gotchas: run the heavy tests alone (CPU/RAM); under Xvfb unset `WAYLAND_DISPLAY` and set `WINIT_UNIX_BACKEND=x11`, give the window X input focus before typing; never `pkill` by a loose pattern.

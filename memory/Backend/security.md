@@ -29,3 +29,10 @@ audit event persistence is unavailable in the live backend. Test mock audit
 rows are not a durable audit log. PDF export similarly remains unavailable.
 No sensitive image or health data should enter logs, demo fixtures, or this
 vault. See [[Backend/data-contracts]], [[Models/licensing-and-data]], [[Decisions/risks-and-blockers]].
+
+## Update 2026-10-28
+- The GUI now opens the SQLCipher database itself: password prompt, Argon2id key derivation on a worker thread, wrong password refused, no plaintext or fixture fallback, password buffers zeroized. First use creates the database; no password recovery.
+- Audit events are persisted (append-only triggers) with identifiers and statuses only, never image bytes or secrets; timestamp is the database time; operator is the OS user.
+- Migration safety: v1 -> v2 copies `<db>.pre-v2.bak` first and rolls back on failure (tested).
+- Plaintext session export remains unencrypted JSON with an on-screen warning; PDFs are text-only research reports.
+- Image intake: 64 MiB file and 40 Mpx decoded-pixel limits enforced before any model session.

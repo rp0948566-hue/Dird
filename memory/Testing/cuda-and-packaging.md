@@ -26,3 +26,6 @@ The user can verify on target hardware using existing scripts and record
 stdout, logs, driver/CUDA versions, actual provider and per-stage timings.
 Do not claim Windows MSVC signing, installer, CUDA performance or GPU inference
 until measured.
+
+## Update 2026-10-28
+Every stage in the app reports provider CPU; CUDA was not run and nothing claims it. The runnable artifact is `GUI/Hackthon dezine/rust/target/release/retinacare` (60.9 MB; models and the database live outside it). Models are not bundled; packaging needs a model bundle + hash manifest, the CUDA check, and a Windows run. Idle GUI RSS ~1.4 GB, cascade peak ~2.95 GB (release).

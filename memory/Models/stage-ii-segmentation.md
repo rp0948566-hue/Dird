@@ -13,14 +13,10 @@ tags: [stage-ii, segmentation]
 <!-- migrated 2026-10-28 from /home/claude/Desktop/Hackthon dezine/Hackthon Backend/stage-ii-segmentation.md (sha256 b2ffdcc7a1db); verify current state in [[active-phase]] -->
 # Stage II segmentation
 
-Expected outputs: separate MA, HE, EX, CWS lesion masks and one vessel mask,
-registered to the exact source image/examination. Rust typed contract and runtime support all five: MA, HE (circle stretch), EX, CWS (rect letterbox, flip TTA; CWS closing and component filter) and VESSEL (FOV crop, CLAHE, green blend, 4-view TTA, opening and component filter). A sequential five-mask ModelService test checks fixed order MA, HE, EX, CWS, VESSEL on one image. M1 verification (2026-10-28): see [[Models/model-inventory]] and `Dird/docs/features/P0-02-stage2-segmentation/11-m1-ma-he-verification.md`. Both have user-authorized weights,
-verified local conversion manifests, CPU parity records, full-frame mask
-restore and nonblocking app-service test records. Persisted gitignored copies live in `Dird/models/stage2_hsmoe_aunet/`; originals in /tmp/retinacare-models/. Neither is packaged.
+**Status 2026-10-28: 5 of 5 models run in Rust ONNX (CPU), technical only.** MA, HE (circle stretch), EX, CWS (rect letterbox, flip TTA, closing + component filter) and VESSEL (SwinHRUNet++: FOV crop, CLAHE, green blend, 4-view TTA) each match upstream-derived reference masks on the demo image. Masks are binary 0/255, restored to the source frame (`mask size == image size`, enforced by `Stage2MaskResult::validate`).
 
-EX, CWS and vessel weights are absent and not authorized. Do not run the
-upstream bulk downloader. Whole Stage II acceptance remains open until all five
-paths, registration and licensed-image integration pass. Evidence:
-[checkpoint inventory](../../docs/features/P0-02-stage2-segmentation/02-checkpoint-inventory.md),
-[test results](../../docs/features/P0-02-stage2-segmentation/07-test-results.md),
-[[Models/model-inventory]], [[Models/stage-iii-grading]], [[Backend/data-contracts]].
+Manifests: `Dird/models/stage2_hsmoe_aunet/{ma,he,ex,cws}/manifest.json`, `stage2_swinhrunetpp/manifest.json` (MA/HE manifests were copied from `/tmp/retinacare-models` on 2026-10-28 after sha256 equality with the ONNX files; all gitignored, never packaged).
+
+Live in the app: the cascade runs the five models one at a time and the GUI draws them as overlays after identity verification ([[Integration/gui-backend-integration]]). Real GUI timings (release, CPU, 640x640): MA 5.2 s, HE 4.7 s, EX 13.8 s, CWS 14.1 s, vessel 5.5 s (+ model load).
+
+Still open: licensed-image acceptance, CUDA, mask persistence (masks are not stored with exams), Windows. Do not run the upstream bulk downloader. Evidence: [checkpoint inventory](../../docs/features/P0-02-stage2-segmentation/02-checkpoint-inventory.md), [test results](../../docs/features/P0-02-stage2-segmentation/07-test-results.md), [[Models/model-inventory]], [[Models/stage-iii-grading]], [[Backend/data-contracts]].

@@ -26,3 +26,6 @@ on one temporary 640×640 repository demo image. Its provenance and license
 are unknown; this is not licensed-data or clinical acceptance. CUDA remains
 unverified. See [implementation and evidence](../../docs/features/P0-01-hierarchiretina-model-loading/stage1-rust-preprocessing-and-inference.md),
 [[Models/model-inventory]], [[Testing/cuda-and-packaging]], [[Models/licensing-and-data]].
+
+## Update 2026-10-28
+Stage I is the first step of the live cascade. GUI demo run: score 0.9983 (threshold 0.2391716), raw logit +6.386, 3.8 s on CPU after preload. The GUI preloads the Stage I model at startup (idle GUI RSS ~1.4 GB). The score is not a calibrated probability. Real negative-route behaviour has not been seen on a real image (none available). See [[Integration/gui-backend-integration]].

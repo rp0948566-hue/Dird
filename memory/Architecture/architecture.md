@@ -51,3 +51,6 @@ and reaps the child, `request_id` and protocol version must be echoed.
 Paths: `retinacare-app::resources::ResourcePaths` resolves `python`,
 `worker_source`, `models`, `data`; `RETINACARE_DEV_ROOT` / `RETINACARE_PYTHON`
 override discovery in debug builds.
+
+## Update 2026-10-28: the one-app wiring
+`retinacare-desktop` (GUI crate, `GUI/Hackthon dezine/rust`) is the single user-facing binary. It links `retinacare-app` (ModelService + cascade), `retinacare-ai-bridge`, `retinacare-persistence`, `retinacare-reports`, `retinacare-domain` as in-process path dependencies (`../../../native/crates/...`). No web view, no HTTP bridge. `retinacare-ui` (backend egui shell) is kept, not used by the app. Data flow and contracts: [[Integration/gui-backend-integration]]; repos and git rules: [[Integration/repo-topology]].

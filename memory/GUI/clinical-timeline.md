@@ -19,3 +19,6 @@ Responsive narrow layout stacks ruler, cards, and inspector vertically below 900
 Cross-patient isolation purges selected event and thumbnails on patient change.
 Navigating timeline never re-executes AI models or triggers inference.
 Truthful banner informs operator when timeline persistence service is offline.
+
+## Update 2026-10-28
+Events come only from stored records: the examination, its saved analysis summary, and audited PDF exports (no invented "clinical assessment" event). Persistence badge reflects whether the database is open.

@@ -26,3 +26,10 @@ Binary: `Dird/GUI/Hackthon dezine/rust/target/release/retinacare` (Antigravity e
 
 ## Honest limits
 Chats: no LLM backend; seeded conversations only in tests/dev fixtures; session-only. Explainability panel: unavailable (Phase 4). CUDA, Windows, licensed-image acceptance, folds 1-4: pending. Evidence: [[Integration/readiness-report]], [[active-phase]].
+
+## Event contract and timings (verified)
+Request -> `Started` -> per stage `StageStarted` / `StageCompleted` (or `StageSkipped` after a negative route) -> exactly one `Finished`. GUI release run, CPU, demo image: screening 3.8 s, MA 5.2, HE 4.7, EX 13.8, CWS 14.1, vessel 5.5, grading 1.8; total 67-74 s; peak RSS 2951 MiB. Debug-build heavy test: 224 s, 3.78 GB.
+## Tests
+`src/cascade_flow_tests.rs` (scripted backend: identity, positive/negative/ungradable/failed/cancel, queue full, duplicate, patient switch, out-of-order events, persistence + audit, PDF via lopdf, intake limits, shutdown cancel); `engine/cascade.rs`, `store.rs`, `patient.rs`, `export.rs`, `report.rs`, `ui/cascade_cards.rs` unit tests; ignored heavy: `live_cascade_runs_through_the_gui_adapter`, `live_service_runs_stage1_on_demo_image`.
+## Commits
+Parent `45f4feb`, GUI `574f8f9` (local only). Evidence: `Dird/docs/features/GUI-BACKEND-INTEGRATION/`.

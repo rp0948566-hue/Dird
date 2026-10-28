@@ -37,3 +37,6 @@ flowchart TD
 
 Legacy DIRD+ is separate web/Tauri implementation under src/ and src-tauri/;
 it remains reference, not the native architecture.
+
+## Update 2026-10-28
+GUI image action -> `submit_cascade` -> `ModelService::analyze` (worker thread) -> `AnalysisEvent` channel -> GUI controller (identity check, one terminal event) -> viewers, report, encrypted DB, PDF, audit. See [[Integration/gui-backend-integration]].

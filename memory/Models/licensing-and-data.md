@@ -28,3 +28,6 @@ validation image. Do not publish, redistribute or put it in regression fixtures.
 No patient images, names, health records, keys or checkpoint binaries belong
 in this memory graph. Keep large checkpoints outside Git. See [[Backend/security]],
 [[Models/model-inventory]], [[Decisions/risks-and-blockers]] and [dataset notes](../../docs/datasets.md).
+
+## Update 2026-10-28
+The app surfaces these limits itself: report banner, PDF "Limitations" section (research-only, fold 0, CPU only, CC BY-NC weights, no images embedded). The demo image `dist/demo-images/session-1-final/OD-1.png` stays "provenance unknown, technical use only". Test patients in the e2e run were synthetic.

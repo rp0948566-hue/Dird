@@ -36,3 +36,12 @@ tags: [gotchas, troubleshooting]
   running legacy scripts.
 
 See [[Testing/build-and-test]], [[Testing/cuda-and-packaging]], [[Integration/gui-source-findings]].
+
+## Added 2026-10-28
+- Cascade timings (release GUI, CPU): ~67-74 s; the first event can lag ~25 s while the worker finishes the Stage I preload.
+- Closing the window used to wait for the whole run; `Drop for RetinaCareApp` now cancels the job (exit ~6 s).
+- `RetinaCareApp` implements `Drop`, so struct-update syntax (`..Default::default()`) cannot be used on it in tests.
+- `pkill -f` with a loose pattern can kill other sessions' processes (it hit a pre-existing GUI instance once). Use `^./target/release/retinacare`-style anchors or PIDs.
+- Under Xvfb: `env -u WAYLAND_DISPLAY WINIT_UNIX_BACKEND=x11`, give the window X focus before typing, wheel over an image zooms it.
+- The GUI decodes a metadata-scrubbed copy for display but the backend hashes/decodes the original file: an EXIF-rotated JPEG can fail the frame-size identity check (safe failure).
+- `cargo fmt --all` formats the whole GUI crate (Antigravity's files included).

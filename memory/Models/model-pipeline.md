@@ -30,3 +30,6 @@ flowchart LR
 Current implementation and assets: [[Models/stage-i-screening]],
 [[Models/stage-ii-segmentation]], [[Models/stage-iii-grading]], [[Models/model-inventory]].
 Threshold routes are research outputs, not diagnoses. See [[Models/licensing-and-data]].
+
+## Update 2026-10-28
+The pipeline is wired end to end in the app: one request -> Stage I gate -> (continue) MA, HE, EX, CWS, VESSEL -> fold 0 grade -> one terminal report. See [[Integration/gui-backend-integration]] for the event contract and timings.

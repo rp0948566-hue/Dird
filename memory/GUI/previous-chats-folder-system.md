@@ -16,3 +16,6 @@ Truthful banner informs operator when backend chat persistence is disconnected.
 Deep links provide one-click navigation to Patient Profile, Exam Detail, and Quad.
 All synthetic fixtures are explicitly labeled with SYNTHETIC TEST FIXTURES badge.
 Zero unencrypted plaintext PHI is dumped to persistent disk.
+
+## Update 2026-10-28
+No chat backend exists, so the page is honest and empty ("EPHEMERAL - PERSISTENCE NOT CONNECTED"). Seeded demo sessions load only in tests or with `RETINACARE_DEV_FIXTURES`.

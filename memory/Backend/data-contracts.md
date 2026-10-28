@@ -32,3 +32,10 @@ unavailable. See [[Architecture/architecture]], [[Architecture/source-map]], [[M
 
 Patient images and personal data must not enter memory notes, public fixtures,
 logs or unsanitized exports. See [[Backend/security]].
+
+## Update 2026-10-28 (supersedes "only MA/HE" and "no GUI Stage II adapter")
+- All five Stage II kinds exist; `Stage2MaskResult` is binary 0/255 in the source frame (width/height equal the image).
+- Cascade contract: `AnalysisRequest { request_id, examination_id, patient_id, eye, image_path, policy }` -> events `Started`, `StageStarted/Completed/Skipped`, exactly one `Finished(AnalysisReport)`; terminal states Graded / Ungradable / NegativeRoute / Cancelled / Failed. `AnalysisReport` carries image sha256 + size, masks, grading, failure kind (fixed text, no paths), timings, peak RSS, `research_only`.
+- GUI stores `CascadeOutcome` JSON (no pixels, ~2 KB) in `examinations.analysis_json`. Identity (request/exam/patient/eye/image sha256/frame size, per mask) is verified before pixels or a grade attach.
+- Persistence: schema v2; `audit_events(id, recorded_at, event_type, patient_id, examination_id, status, detail)` append-only.
+- Details: [[Integration/gui-backend-integration]].

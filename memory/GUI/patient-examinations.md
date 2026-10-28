@@ -21,3 +21,6 @@ All 105 automated unit and integration tests pass cleanly with zero failures.
 Clippy check passes with zero warnings under clippy -D warnings.
 Format check passes with zero warnings under cargo fmt --all --check.
 Visual desktop verification verified across 6 authentic Linux desktop screenshots.
+
+## Update 2026-10-28
+`LiveCodexPatientService` now serves real data from the SQLCipher store (unlock form on the Patients page; `DatabaseLocked` until unlocked). New exam stores eye, image path and (after a verified run) the analysis summary. Selecting a patient or exam clears the loaded image and results. Default operator is the OS user. Replaces the "backend handoff requires Codex..." items above.

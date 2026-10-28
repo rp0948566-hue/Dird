@@ -29,3 +29,6 @@ Cargo fmt passes all formatting checks.
 Cargo release build compiles cleanly to rust/target/release/retinacare.
 Live desktop verification completed with 10 authentic captures under Ubuntu Linux.
 Task 07 and 07.1 declared GUI COMPLETE, backend durable persistence PARTIAL and BLOCKED.
+
+## Update 2026-10-28
+Current verified state lives in [[active-phase]]. Summary: real cascade and masks in the Quad Viewer, scoped results in the Report, encrypted patients/exams, real PDF, persisted audit; Previous Chats stays ephemeral; seeded sessions only in tests/dev fixtures.

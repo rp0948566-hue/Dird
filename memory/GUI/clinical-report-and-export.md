@@ -17,3 +17,6 @@ Scoped patient session export packages active patient and examination data into 
 Zero cross-patient data leakage is enforced through validation gates.
 All PDF, session, and audit operations remain local on device with zero cloud telemetry.
 Minimal Codex handoff API contracts are documented in docs/features/GUI-P05-clinical-report-export/13-task06-handoff.md.
+
+## Update 2026-10-28 (supersedes "unavailable" lines above)
+PDF export is real (`retinacare-reports`, atomic write, text-only, save dialog; `RETINACARE_PDF_DEST` for automation). The audit ledger is real and persisted ("Append-Only", not tamper-evident). Report shows Stage I + all stages that ran, the research-only banner, and a restored-summary notice for reopened exams. Stage II/III are no longer marked unavailable when they ran. See [[Integration/gui-backend-integration]].

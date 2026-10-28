@@ -28,3 +28,11 @@ tags: [decisions, ADR]
 
 Evidence and blockers: [[active-phase]], [[Handoffs/agent-ownership]],
 [[Decisions/risks-and-blockers]].
+
+## Decisions 2026-10-28 (integration)
+- **One app, separate repos.** The GUI crate links backend crates by path; nested GUI `.git` stays; parent excludes `/GUI/` locally. Commits are local (parent `45f4feb`, GUI `574f8f9`), not pushed.
+- **Never fake.** Missing capability = explicit unavailable state (chats, explainability, CUDA). Failed/cancelled runs publish no grade. A grade needs a verified, completed cascade run.
+- **Results are stored as a summary only** (no pixels) until a mask-artifact design is approved.
+- **Scratch exams** (id >= 1e9) are never written to the database.
+- **One heavy cascade at a time**; a replaced/cancelled job blocks new runs until its terminal event.
+- **MA/HE manifests copied into `Dird/models`** (gitignored) so the cascade finds all seven manifests.

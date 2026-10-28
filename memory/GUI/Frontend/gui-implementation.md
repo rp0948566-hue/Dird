@@ -45,3 +45,6 @@ clinical PDF implementation. Next GUI handoff proposes Task 06 patient and
 examination management; confirm scope before starting. See [[Archive/gui-vault-backend-mirrors/Handoffs/agent-ownership]],
 [[Archive/gui-vault-backend-mirrors/Backend/data-contracts]], [[Archive/gui-vault-backend-mirrors/Decisions/risks-and-blockers]] and external
 [Task 05 limitation record](<../../../GUI/Hackthon dezine/docs/features/GUI-P05-clinical-report-export/12-limitations-and-backend-gaps.md>).
+
+## Update 2026-10-28
+Superseded status: Stage II/III, PDF, audit and persistence are integrated. Read [[Integration/gui-backend-integration]] first.

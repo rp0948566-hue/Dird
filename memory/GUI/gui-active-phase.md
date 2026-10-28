@@ -22,3 +22,6 @@ Architecture standard: 100% native Rust using egui and eframe 0.37 with Glow Ope
 Zero web technologies: No HTML, CSS, JavaScript, TypeScript, React, Electron, or Tauri.
 Idle heartbeat scheduled at 500ms prevents Wayland and X11 unresponsiveness.
 Next milestone: Await user authorization before git commit, push, or Task 08.
+
+## Update 2026-10-28 (integration, Claude)
+The GUI is now wired to the real backend: cascade, encrypted persistence, PDF, audit. Tests 166 passed / 2 ignored, fmt + clippy clean, release build ok. Where this note says "durable persistence PARTIAL/BLOCKED" or "119 tests", see [[active-phase]] and [[Integration/gui-backend-integration]] for the current state.

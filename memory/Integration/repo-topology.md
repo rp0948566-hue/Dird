@@ -18,4 +18,5 @@ verified_on: 2026-10-28
 - GUI Cargo path deps: `../../../native/crates/retinacare-{ai-bridge,app}` (verified by build).
 - Two Cargo lockfiles/targets (backend `native/`, GUI `rust/`) are independent; do not share target dirs.
 - GUI CLAUDE.md: never `git add`/`git push` without asking the user.
+- Local commits 2026-10-28 (not pushed): parent `main` `45f4feb`; GUI `dezine` `574f8f9`. Two Antigravity task PDFs in the GUI root were left untracked.
 - Restore/rollback: `/home/claude/Desktop/retinacare-backups/2026-10-28-pre-consolidation/` (bundles, patches, tarballs, SHA256SUMS).

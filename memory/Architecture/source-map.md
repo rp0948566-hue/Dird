@@ -39,3 +39,16 @@ Backend workspace: [native/Cargo.toml](../../native/Cargo.toml).
 
 External GUI paths are documented in [[Handoffs/agent-ownership]]. Full flow: [[Architecture/architecture]],
 [[Models/model-pipeline]], [[Backend/data-contracts]].
+
+## Added 2026-10-28
+| Concern | Path |
+|---|---|
+| Cascade state machine, `AnalysisEvent`, `ModelRuntimeRunner` | native/crates/retinacare-app/src/cascade.rs; entry `models.rs` (`analyze`, `cancel_analysis`, `try_next_analysis`) |
+| Audit ledger, schema v2, analysis/image setters, migration | native/crates/retinacare-persistence/src/lib.rs (`append_audit_event`, `list_audit_events`, `set_examination_analysis`, `set_examination_image`, `SCHEMA_VERSION`) |
+| PDF writer | native/crates/retinacare-reports/src/lib.rs (`render_pdf`, `validate_pdf`, `write_pdf_atomic`) |
+| GUI cascade adapter, outcome, identity checks | GUI rust/src/engine/cascade.rs |
+| GUI encrypted store + unlock | GUI rust/src/engine/store.rs; live services in engine/patient.rs, engine/export.rs |
+| GUI result cards | GUI rust/src/ui/cascade_cards.rs; overlays/toolbar in ui/viewer.rs |
+| Report document builder, UTC time | GUI rust/src/engine/report.rs (`build_report_document`) |
+| App-level flow tests (scripted backend) | GUI rust/src/cascade_flow_tests.rs |
+| Vault tooling | scripts/consolidate-vaults.py (`check memory`) |

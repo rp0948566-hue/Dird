@@ -29,3 +29,8 @@ MA/HE local hash and parity evidence is in
 [P0.2 test results](../../docs/features/P0-02-stage2-segmentation/07-test-results.md).
 MA/HE Stage II weights are CC BY-NC 4.0; keep outside Git and do not use
 commercially. See [[Models/model-pipeline]], [[Models/licensing-and-data]].
+
+## Update 2026-10-28
+- Stage II MA/HE manifests now exist under `Dird/models/stage2_hsmoe_aunet/{ma,he}/manifest.json` (copied from `/tmp/retinacare-models`; sha256 matched the ONNX files; gitignored). The cascade loads seven manifests: stage1, ma, he, ex, cws, vessel, stage3 fold 0 (`discover_cascade_paths`).
+- Model hashes shown in the GUI report/PDF come from the backend result, not from constants. Stage III fold 0 ONNX sha256 `31f20d62...129cb7`.
+- Nothing downloaded in this task. Folds 1-4 still need separate approval.
