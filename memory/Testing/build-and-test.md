@@ -55,3 +55,6 @@ GUI (`Dird/GUI/Hackthon dezine/rust`): fmt, clippy `-D warnings`, release build 
 Desktop: release binary driven under Xvfb with real clicks/typing; screenshots at 1280x820, 1024x768, 700x650; restart persistence; PDF opened by an independent reader. Evidence folder: `Dird/docs/features/GUI-BACKEND-INTEGRATION/` (42 checks + 30 edge cases).
 Commits (local, not pushed): parent `45f4feb`, GUI `574f8f9`.
 Gotchas: run the heavy tests alone (CPU/RAM); under Xvfb unset `WAYLAND_DISPLAY` and set `WINIT_UNIX_BACKEND=x11`, give the window X input focus before typing; never `pkill` by a loose pattern.
+
+## 2026-10-28 - P2 final gates
+Backend `cargo test --workspace` 120 passed, 0 failed, 18 ignored. GUI `cargo test` 170 passed, 0 failed, 2 ignored. fmt, clippy `-D warnings`, release builds and `git diff --check` pass in both. Heavy real-model GUI test passed earlier (63.7 s, 2826 MiB). Logs: `docs/features/P2-mask-persistence/evidence/`.

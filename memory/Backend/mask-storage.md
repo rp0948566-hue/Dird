@@ -17,3 +17,6 @@ Source: `native/crates/retinacare-persistence/src/masks.rs`. Evidence, matrix, t
 
 ## Limits
 Binary masks only (no probabilities, heatmaps or images). Not tamper-proof against a holder of the database password. Labelled Dice/IoU, CUDA and Windows are unverified; see [[Models/stage-ii-segmentation]], [[Backend/data-contracts]], [[Backend/security]].
+
+## Desktop acceptance (2026-10-28)
+Synthetic exam, real release GUI: five masks stored after Run Full Analysis; relaunch, unlock, reopen showed restored lesion and vessel overlays with "No model was run". Pixel identity and checksums were verified by the in-process tests, not by reading the screen. Screenshots: `docs/features/P2-mask-persistence/evidence/`.

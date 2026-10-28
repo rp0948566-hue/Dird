@@ -13,7 +13,7 @@ One binary; Stage I score/route; 5 real masks in Quad Viewer; Fold 0 grade (tech
 Measured (CPU, release GUI, OD-1.png 640x640): 67-74 s end to end, peak RSS 2.95 GB, idle GUI RSS ~1.4 GB (Stage I preloaded).
 
 ## Partial / blocked
-- Masks ARE now stored (P2, 2026-10-28): five checksummed masks per saved exam in the encrypted DB, restored on reopen with no model run. Not yet shown in a driven desktop session; labelled Dice/IoU BLOCKED. See [[Backend/mask-storage]].
+- Masks ARE stored and restored (P2, 2026-10-28): verified in the real desktop app on a synthetic exam. Labelled Dice/IoU BLOCKED. See [[Backend/mask-storage]].
 - Previous Chats: no LLM backend, no storage (ephemeral notice, no seeded chats outside dev/tests).
 - Negative route and ungradable: verified with scripted events and backend tests, not with a real image (none available).
 - CUDA, Windows, licensed-image acceptance, folds 1-4/ensemble, explainability (Phase 4): not done.
@@ -23,6 +23,6 @@ Measured (CPU, release GUI, OD-1.png 640x640): 67-74 s end to end, peak RSS 2.95
 
 P1 Stage I hardening (2026-10-28): hashes, routing, failure paths and CPU profile VERIFIED; licensed images and CUDA BLOCKED. See [[Models/stage-i-screening]], [[Testing/cuda-and-packaging]].
 
-P2 mask persistence (2026-10-28): engineering COMPLETE (save, restore, integrity, isolation, v3 migration, failure paths); CUDA, Windows, labelled metrics BLOCKED. Evidence: `docs/features/P2-mask-persistence/README.md`. Parent repo has uncommitted P1 + P2 work.
+P2 mask persistence (2026-10-28): engineering COMPLETE and DESKTOP-VERIFIED on a synthetic exam (save, close, relaunch, unlock, restore with no model run). Commits: parent `a3c7b27` (local, 6 ahead of Debaq/Dird main), GUI `1565326` pushed to origin `dezine`. CUDA, Windows, labelled metrics, real power-loss and full-disk BLOCKED. Evidence: `docs/features/P2-mask-persistence/README.md` and `evidence/`.
 
 Next: [[Handoffs/next-actions]].

@@ -187,3 +187,9 @@ were changed. The two repositories' prior uncommitted work remains intact.
 - New `native/crates/retinacare-persistence/src/masks.rs` (schema v3, atomic save, verified load, RLE); GUI wiring in `engine/{cascade,patient}.rs`, `main.rs`, `ui/cascade_cards.rs`; 11 persistence tests, 4 new GUI flow tests, real 7-model roundtrip in the ignored heavy test.
 - Run now: backend 120/0/18 ignored, GUI 170/0/2 ignored, fmt/clippy/release clean; heavy GUI run 63.7 s, 2826 MiB, five real masks reloaded pixel-identical (save 2.9 ms, load 4.6 ms, DB 86 KB).
 - Evidence and matrix: `docs/features/P2-mask-persistence/README.md`. Nothing committed or pushed. Blocked: labelled Dice/IoU, CUDA, Windows.
+
+## 2026-10-28 - P2 desktop acceptance and GUI push
+- Real release GUI on a private Xvfb display, synthetic DB and patient SYN-P2-001: create DB, register, save exam (demo image OD-1.png, technical use only), Run Full Analysis (67.7 s, CPU, grade 3 research-only, five masks stored), close (exit clean), relaunch, locked state shown, unlock, restore with overlays and "No model was run".
+- Evidence: `docs/features/P2-mask-persistence/evidence/` (sanitized screenshots, app logs, test logs).
+- GUI commit `1565326` on `dezine`, pushed to origin (AI-Manthan-2.0); remote ref verified. Backend `a3c7b27` local only.
+- Tests rerun: backend 120/0/18, GUI 170/0/2; fmt, clippy, release, diff-check clean.
