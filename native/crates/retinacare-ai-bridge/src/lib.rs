@@ -9,6 +9,8 @@ pub mod stage1;
 pub mod stage2_contract;
 pub mod stage2_preprocessing;
 pub mod stage2_vessel;
+pub mod stage3_grading;
+pub mod stage3_input;
 
 use serde_json::{Value, json};
 use std::{

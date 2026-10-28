@@ -1,3 +1,4 @@
+pub mod cascade;
 pub mod database;
 pub mod models;
 pub mod resources;

@@ -1,0 +1,106 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 4340 >>
+stream
+BT /F2 16 Tf 50 778 Td (RetinaCare Research Screening Report) Tj ET
+BT /F1 10 Tf 50 764 Td () Tj ET
+BT /F2 10 Tf 50 750 Td (RESEARCH PROTOTYPE - NOT A CLINICAL DOCUMENT. For investigational screening only; not) Tj ET
+BT /F2 10 Tf 50 736 Td (a diagnosis. A licensed ophthalmologist must examine the patient.) Tj ET
+BT /F1 10 Tf 50 722 Td () Tj ET
+BT /F2 12 Tf 50 708 Td (1. Identification) Tj ET
+BT /F1 10 Tf 50 694 Td (Patient code: E2E-001) Tj ET
+BT /F1 10 Tf 50 680 Td (Patient name: Integration Test Patient) Tj ET
+BT /F1 10 Tf 50 666 Td (Examination: EXAM-001) Tj ET
+BT /F1 10 Tf 50 652 Td (Eye: OD \(right\)) Tj ET
+BT /F1 10 Tf 50 638 Td (Examination date: 2026-10-28T07:50:38Z) Tj ET
+BT /F1 10 Tf 50 624 Td (Source image: OD-1.png \(640 x 640 px\)) Tj ET
+BT /F1 10 Tf 50 610 Td (Report generated: 2026-10-28 07:56:50Z) Tj ET
+BT /F1 10 Tf 50 596 Td () Tj ET
+BT /F2 12 Tf 50 582 Td (2. Status) Tj ET
+BT /F1 10 Tf 50 568 Td (COMPLETE - Stage I, Stage II \(5 masks\) and Stage III fold 0 \(single-fold technical test\)) Tj ET
+BT /F1 10 Tf 50 554 Td () Tj ET
+BT /F2 12 Tf 50 540 Td (3. Results) Tj ET
+BT /F1 10 Tf 50 526 Td (Outcome: Single-fold technical severity grade 3 \(research only\)) Tj ET
+BT /F2 10 Tf 50 512 Td (SINGLE-FOLD TECHNICAL TEST \(LG-DRG fold 0\) - RESEARCH ONLY. Not a clinical grade;) Tj ET
+BT /F2 10 Tf 50 498 Td (five-fold ensemble, licensed-image acceptance and clinical validation are pending.) Tj ET
+BT /F1 10 Tf 50 484 Td (Stage I screening gate: score 0.9983 \(not a calibrated probability\), threshold 0.2392, raw) Tj ET
+BT /F1 10 Tf 50 470 Td (logit 6.386, route: continue cascade.) Tj ET
+BT /F1 10 Tf 50 456 Td (Stage II microaneurysms \(MA\): 58 foreground pixels of 640 x 640 \(0.014% of the frame\).) Tj ET
+BT /F1 10 Tf 50 442 Td (Stage II hemorrhages \(HE\): 1574 foreground pixels of 640 x 640 \(0.384% of the frame\).) Tj ET
+BT /F1 10 Tf 50 428 Td (Stage II exudates \(EX\): 8997 foreground pixels of 640 x 640 \(2.197% of the frame\).) Tj ET
+BT /F1 10 Tf 50 414 Td (Stage II cotton-wool spots \(CWS\): 400 foreground pixels of 640 x 640 \(0.098% of the frame\).) Tj ET
+BT /F1 10 Tf 50 400 Td (Stage II vessels \(SwinHRUNet++\): 47521 foreground pixels of 640 x 640 \(11.602% of the) Tj ET
+BT /F1 10 Tf 50 386 Td (frame\).) Tj ET
+BT /F1 10 Tf 50 372 Td (Stage III LG-DRG \(single-fold technical test \(fold 0\)\): technical severity grade 3; gradable) Tj ET
+BT /F1 10 Tf 50 358 Td (probability 1.000.) Tj ET
+BT /F1 10 Tf 50 344 Td () Tj ET
+BT /F2 12 Tf 50 330 Td (4. Provenance) Tj ET
+BT /F1 10 Tf 50 316 Td (Stage I model: hierarchiretina-stage1-convnextv2l-768 sha256) Tj ET
+BT /F1 10 Tf 50 302 Td (9ad51e1f428dc59ab49f1f49e8f68a84cd23d8fd4c2c461b45b06bcc726880ac \(CPU\)) Tj ET
+BT /F1 10 Tf 50 288 Td (Stage II microaneurysms \(MA\) model sha256) Tj ET
+BT /F1 10 Tf 50 274 Td (ac874bee868bbd7109d1358deaa35ab59f38d7664a4ea7eec22e00c8be79aac5 \(CPU\)) Tj ET
+BT /F1 10 Tf 50 260 Td (Stage II hemorrhages \(HE\) model sha256) Tj ET
+BT /F1 10 Tf 50 246 Td (16f767a8deb3751962d00abfaa5aca27fb40b43c64a77108c78610111260b966 \(CPU\)) Tj ET
+BT /F1 10 Tf 50 232 Td (Stage II exudates \(EX\) model sha256) Tj ET
+BT /F1 10 Tf 50 218 Td (2aa92099f2333e3d1afe862a618a8436023bc03f14b5a8f62ea67debf2612207 \(CPU\)) Tj ET
+BT /F1 10 Tf 50 204 Td (Stage II cotton-wool spots \(CWS\) model sha256) Tj ET
+BT /F1 10 Tf 50 190 Td (6c928a75b28884ca19a58fa11daa6020868af57081b07b347961ce7b4c967882 \(CPU\)) Tj ET
+BT /F1 10 Tf 50 176 Td (Stage II vessels \(SwinHRUNet++\) model sha256) Tj ET
+BT /F1 10 Tf 50 162 Td (cc7ef0bb23732c7a1c89954244df9b6a5523f516c3818821811c667d2d5d76e0 \(CPU\)) Tj ET
+BT /F1 10 Tf 50 148 Td (Stage III model sha256 31f20d62f972a0a8f9119162c8a30b7e2a96509933f0a9bc9a3845b3a6129cb7) Tj ET
+BT /F1 10 Tf 50 134 Td (\(CPU\)) Tj ET
+BT /F1 10 Tf 50 120 Td (Source image sha256: 32d756fc923262daa5296c6852c1569e01394b37db57e72385785fca9017c899;) Tj ET
+BT /F1 10 Tf 50 106 Td (identity checks \(patient, examination, eye, image, frame size\): passed.) Tj ET
+BT /F1 10 Tf 50 92 Td (Measured run time 73.5 s, peak memory 2951 MiB.) Tj ET
+BT /F1 10 Tf 50 78 Td () Tj ET
+BT /F2 12 Tf 50 64 Td (5. Limitations) Tj ET
+BT /F1 10 Tf 50 50 Td (- Research prototype. No clinical validation; not a medical device.) Tj ET
+BT /F1 8 Tf 50 28 Td (Page 1 of 2 - research prototype report, not a clinical document) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 743 >>
+stream
+BT /F1 10 Tf 50 778 Td (- Stage III uses fold 0 of five folds only. Folds 1-4 and the ensemble are not implemented.) Tj ET
+BT /F1 10 Tf 50 764 Td (- No licensed or clinically validated image set has been used for acceptance.) Tj ET
+BT /F1 10 Tf 50 750 Td (- Only the CPU execution provider has been exercised; CUDA is not verified.) Tj ET
+BT /F1 10 Tf 50 736 Td (- Model weights are CC BY-NC 4.0 \(non-commercial use only\).) Tj ET
+BT /F1 10 Tf 50 722 Td (- This PDF contains text only: segmentation masks and the source image are not embedded.) Tj ET
+BT /F1 10 Tf 50 708 Td (- Explainability \(heatmaps\) is not available and none is shown.) Tj ET
+BT /F1 8 Tf 50 28 Td (Page 2 of 2 - research prototype report, not a clinical document) Tj ET
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000218 00000 n 
+0000000320 00000 n 
+0000000456 00000 n 
+0000004847 00000 n 
+0000004983 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+5776
+%%EOF

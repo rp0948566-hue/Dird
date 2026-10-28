@@ -1,0 +1,909 @@
+{
+ "migrated": "2026-10-28",
+ "notes": [
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/00-index.md",
+   "src_sha256": "1c87cc9b743749a6df3fc7391bdbd39d2eb48392e2e2d16368e34d85b1f84441",
+   "dest": "Archive/hackthon-backend-superseded/00-index.md",
+   "dest_sha256": "d7d9dafc8d6ee3105140ddbabe73d0f7300f50f64a784bc1768c0c14b645bc12"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/01-claude-start-here.md",
+   "src_sha256": "55f9f8e4089445d5edfeeb1d463569eeafab5ec3b377ccc7a76a9584fdf49201",
+   "dest": "Archive/hackthon-backend-superseded/01-claude-start-here.md",
+   "dest_sha256": "3597f6bf665065b81dd497f5c71439a81c2a6a59c23a4f7c188fa6566e5e4e57"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/90-claude-session-template.md",
+   "src_sha256": "9a0d23454660d62f816293cbd74932b2072fd8b35406240eb84de254a71c0ab9",
+   "dest": "Handoffs/90-claude-session-template.md",
+   "dest_sha256": "fa5f268b3f56b142348786ea133a38dd02655b5bcb4bb566a5cf1b1762b27e45"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/README.md",
+   "src_sha256": "904151a0257aafb409b450dd0b6a7815f6441c36fffff21d7fea858ddc540dd4",
+   "dest": "Archive/hackthon-backend-superseded/README.md",
+   "dest_sha256": "626548f606991e658ef6f93c03fbaf4b3160dbf23bd989a0d06d03a147d92223"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/active-phase.md",
+   "src_sha256": "d51b3307623f7793087927d01ff36ee9a3c49b25f7d1ff745ba07a6abbc0ca59",
+   "dest": "Archive/hackthon-backend-superseded/active-phase.md",
+   "dest_sha256": "afef9cb345fa3f1e3ce356cc7dcb43b4c45b8d59a906c463d30075aeef89be29"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/agent-ownership.md",
+   "src_sha256": "1ecd55a9cad3cc341eebbf2f7b2dff91e443b445392ee66cf16402bc428149ba",
+   "dest": "Handoffs/agent-ownership.md",
+   "dest_sha256": "6d0bad9ce505b14b9e113b0641d4f295862c3cc15b012d5ac9a1fcd8c442df0d"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/architecture.md",
+   "src_sha256": "0e3e78edabb20056940ef57da4e6e976a0fc959e38df5fd6ba7235df7132c5db",
+   "dest": "Architecture/architecture.md",
+   "dest_sha256": "f43993b09cd3cdcfc6582ec60ab042d12fa477cacc45f7a6be62eedccd7ba81d"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/architecture-overview.md",
+   "src_sha256": "5d5c9db290dcd749979aa6473a4c9555760b3a941ba7796d24b442a1ce00cf20",
+   "dest": "Architecture/architecture-overview.md",
+   "dest_sha256": "e1fd57a58bab5cab48eb325c586efff06054ffb9b253c561949c18fe9486a52e"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/build-and-test.md",
+   "src_sha256": "1cc8a2457a69a9ea7059cdf1de7c0964a6de0a22896bd9ac46dacc5fc66c4035",
+   "dest": "Testing/build-and-test.md",
+   "dest_sha256": "97bd8a4737a696a1c808e56967c3e128b61e68ea8ec6b5d502f5461a1e280803"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/changelog-and-handoffs.md",
+   "src_sha256": "b6dacde196864df6bb9a8a137763ae51004aeb6dc206bfa86c602ca4c3c4540a",
+   "dest": "Handoffs/changelog-and-handoffs.md",
+   "dest_sha256": "92a8d21acade6015c008971726464082c960e78fa9c41fab9e084a79bc80db64"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/cuda-and-packaging.md",
+   "src_sha256": "fcb1cdde124a93a305a81cb9b1fd0ba5f67e1212aab42006a8a5e525c469d6d6",
+   "dest": "Testing/cuda-and-packaging.md",
+   "dest_sha256": "300b986710978c360fe6bb28939567cdb34170bd45aa83a79d8b71f6bc47396e"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/data-contracts.md",
+   "src_sha256": "9b4d21a78f7c0cbee7d93fa1c4769d4c5a9cae5cdc7bf13e2e8ea341ef020237",
+   "dest": "Backend/data-contracts.md",
+   "dest_sha256": "5b537ad0ba91181da451bc06a07e2abe053e0937a48cc1ead30ae875be538847"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/decisions.md",
+   "src_sha256": "f50032bf75e192c9ee1861a93601063729a8b1081ee7736cd728b8b34ac83e0f",
+   "dest": "Decisions/decisions.md",
+   "dest_sha256": "fbfb577b870ece0c2759d2377ac25d0eb0caf07293d99756b55ca15bdbdc4dc9"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/docs-index.md",
+   "src_sha256": "052cbaa59518093eb07f712539a6e2093a21eebad86395a006cc49a9cd578623",
+   "dest": "Archive/hackthon-backend-superseded/docs-index.md",
+   "dest_sha256": "b66ebe8b6c6e614f36590cbb44dacf483aee265691064acd7572b7b0ea010078"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/eye-ok.md",
+   "src_sha256": "5782d694cabf2314cb7f2699e18f3acce7788f823600b4a120b871e9adee69d4",
+   "dest": "Archive/hackthon-backend-superseded/eye-ok.md",
+   "dest_sha256": "63cc6a3d30627d6e47ba62dcd1d0f1004be4f298398ddc833bd25f453cbb22f6"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/gotchas.md",
+   "src_sha256": "249726c027361636deaa77e7f2f91c0a0730a865a1247334df3bc4ede850e049",
+   "dest": "Decisions/gotchas.md",
+   "dest_sha256": "eeef669903fa3073f4050f81c1a59c2366b47d6632873a25485ded0e3474171c"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/graph-overview.md",
+   "src_sha256": "7684ed3410267d86f9ae4edb41ed8b351cd77e7055bc2ab0666d38c877e08ffd",
+   "dest": "Archive/hackthon-backend-superseded/graph-overview.md",
+   "dest_sha256": "1124306c2f4d4941518513b36dedbae942efafd0133c1e7212650311459e481e"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/gui-implementation.md",
+   "src_sha256": "80c17539e3bc5c54f65249ac83ebfb49b4fa3749f3aabf3a18b83c5d564a3740",
+   "dest": "Integration/gui-source-findings.md",
+   "dest_sha256": "33089ad954730fd712122f6a8c331b7eaae6c61d93e0b31f5778e8ed462f8239"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/licensing-and-data.md",
+   "src_sha256": "d3477372351bb2094d64957ed0505c70c2b426cc9911a289c26d115e8c717586",
+   "dest": "Models/licensing-and-data.md",
+   "dest_sha256": "5b54e4f38a81697b92e73b33715fbda42fda27d4fd03fbfc7bf7e73103be6548"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/model-inventory.md",
+   "src_sha256": "76011b4caa3f531ef7c44fd86093f563e03e1cafd155e6e6fc9ee14bec52e4d4",
+   "dest": "Models/model-inventory.md",
+   "dest_sha256": "f194c7b20385950a9677d7f2668c5c98ec145420eaecdf68ad18b88d7e8ca1fa"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/model-pipeline.md",
+   "src_sha256": "993482d3fba5df9533baa672225b96d07679d7d1a1a77a2bed84dc204d265553",
+   "dest": "Models/model-pipeline.md",
+   "dest_sha256": "8316ba3515f91c9e17131b6301e601f1879972880cbc9e8984cd480d5ed2bd0b"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/next-actions.md",
+   "src_sha256": "b43f6dfd6564f151d02deba5a6c8571d195fc7046187ce89eaaed4dfbef26222",
+   "dest": "Archive/hackthon-backend-superseded/next-actions.md",
+   "dest_sha256": "8d9162afc2212954087ccd06c924e17b4d28a1c6790f98ab2cc41d9f8e3ade40"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/project-overview.md",
+   "src_sha256": "b7ec1fad070daf504f3c521a91e0338c6bcbcbb54dfad368feeb99c7a446fbe4",
+   "dest": "Backend/project-overview.md",
+   "dest_sha256": "9c0045061b22ea28b91eea56d5d1d160aae2a497b745451b0a3ef55f44382673"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/retinacare-current-state.md",
+   "src_sha256": "66722c464ff0f7fc28d35d8b4a610e192bf5a9e7f8405fb846f52408748e0968",
+   "dest": "Archive/hackthon-backend-superseded/retinacare-current-state.md",
+   "dest_sha256": "b726384bbf2a1553694f0614b5302f36f1121c5271c35a0cf1f51419750344aa"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/retinacare-phase-1.md",
+   "src_sha256": "0557f65d5f8f24a20462e81cbba252c0998091723cb3db9e8dd07c5612575b7e",
+   "dest": "Archive/hackthon-backend-superseded/retinacare-phase-1.md",
+   "dest_sha256": "374c3d74268c3d82fbd3daf903880fdf556770f78738249b3a2e70f071de1c2c"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/risks-and-blockers.md",
+   "src_sha256": "51a2091bd62b17132c450d2a332e5fd4fd6f2fac52bfd028c7eb88b7da123802",
+   "dest": "Decisions/risks-and-blockers.md",
+   "dest_sha256": "f1db60601b337aeb0771edfdd9d26498a6ea86d786b5c480bfdc193ef0415075"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/security.md",
+   "src_sha256": "b3855b2255b28b385c0abe0d13336d520ab5d1b9ca5d425117e09e3c9d0bae7d",
+   "dest": "Backend/security.md",
+   "dest_sha256": "ed64e738972b0da97ad41753e58f7f6e3f7d826ab530313f9192a05ec057b751"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/source-map.md",
+   "src_sha256": "810a151986e9b4a77c3612e8b50f4f856af0e068b2de6b0a68e2794c6f2ca76f",
+   "dest": "Architecture/source-map.md",
+   "dest_sha256": "2c26c2ffb5f08218f787bbfc3b44cbedf3d89ce606000ad440de3f3be22e3446"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/stage-i-screening.md",
+   "src_sha256": "ff5335046c3f70be73da805942bfa8ab68a5689f713d7dc48513aff0fcf13ae9",
+   "dest": "Models/stage-i-screening.md",
+   "dest_sha256": "fe798ef4266b13a1f69988ab9484883a765cda6cc202784d749581ae4ed763a9"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/stage-ii-segmentation.md",
+   "src_sha256": "b2ffdcc7a1db15d21ff4fb587af9f704c29ceb6fb3b8f728b0b62136ce2d1413",
+   "dest": "Models/stage-ii-segmentation.md",
+   "dest_sha256": "a6c5d2341e7dd79df87d14eb4f863a6fdd8f38d24a8c81dadc5322121453c463"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/stage-iii-grading.md",
+   "src_sha256": "c453054f83bee4beec07752381ec92fddc03de742fb43f75cdd7841ccdf6c2e2",
+   "dest": "Models/stage-iii-grading.md",
+   "dest_sha256": "f82daa13771fd8c43cd31c8563a8b078fe7dbeb50d1e42027da0ff8809e69d18"
+  },
+  {
+   "source": "backend",
+   "src": "/home/claude/Desktop/Hackthon dezine/Hackthon Backend/working-agreement.md",
+   "src_sha256": "8e68b9142c83a8bb2f7e61ab8f39905eb9fd814a38e56f598bcacd5ea193c1f5",
+   "dest": "Handoffs/working-agreement.md",
+   "dest_sha256": "3fd558c40ae856f18534db6f1415439597206e923ea02152249fb9562adf715b"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/00-index.md",
+   "src_sha256": "4bcda66bcfbed36d1721d226f3d96ae394abd1551fb83e1857e401ff6713e795",
+   "dest": "GUI/gui-00-index.md",
+   "dest_sha256": "5a9fdfbf79437efe694bec1cf920109a1fb36d25f11fe99ba7e4f8fbdb18d34c"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/01-claude-start-here.md",
+   "src_sha256": "419813d37bcc53eaeb3e8360d5763d32435a18791a51cb1046da665d86a2d890",
+   "dest": "GUI/gui-01-claude-start-here.md",
+   "dest_sha256": "cdc1471f6fe5938b7284cf24d3cb77df1206d2ad50b7e1e34e5cd7f437e63447"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Architecture/README.md",
+   "src_sha256": "e69dd247d6b1d1934e3694c04b3e19b2c4560831d5a4e050dc097e6d5c0ba018",
+   "dest": "Archive/gui-vault-backend-mirrors/Architecture/README.md",
+   "dest_sha256": "9d23cd9d567127b5415e812e6fb9438826e0e6c23ffa2b3e123483064edf3282"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Architecture/architecture.md",
+   "src_sha256": "1b3e4d0ef9e2cb43ccdbff8118f4a4a050c12c26544b9746aa0060fa4b2de98d",
+   "dest": "Archive/gui-vault-backend-mirrors/Architecture/architecture.md",
+   "dest_sha256": "c1e831029cc3b02329ff5cb1319a332255df28971410d9f9645f5e9f6245b71f"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Architecture/architecture-overview.md",
+   "src_sha256": "8ebec9c65fbc3cafadeb6d0fa9f355f4fbd888246b5eebb27d5450f219b0461e",
+   "dest": "Archive/gui-vault-backend-mirrors/Architecture/architecture-overview.md",
+   "dest_sha256": "50a03708d78431612b7a2fefed9b1d904edda99743e8c98822b792e8e86176ee"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Architecture/graph-overview.md",
+   "src_sha256": "20279581dd2a24a9ea54c8afa2e077a3c05fb2145639df8a05d11be83e0408e4",
+   "dest": "Archive/gui-vault-backend-mirrors/Architecture/graph-overview.md",
+   "dest_sha256": "0286ba9df32b34f2676627aadcee52020d39950eb0489c6aa454eb66806dfecd"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Architecture/source-map.md",
+   "src_sha256": "d2d4e807b2e4af47d0c2f1cfbed7cfbe7fc68978e0a935edeb8ac09f4acb6f39",
+   "dest": "Archive/gui-vault-backend-mirrors/Architecture/source-map.md",
+   "dest_sha256": "711c50293aeb9cf73864d36557f1c851cac4bd7affa51c2d508758f4795b03c0"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Backend/README.md",
+   "src_sha256": "9a7fe496535b499e9a6ccd7c4a9dc9566a52578e1aa2552f6e087992f0e7a36c",
+   "dest": "Archive/gui-vault-backend-mirrors/Backend/README.md",
+   "dest_sha256": "1076c975feee422de1c3c7243d5eb980f90635093f996d869155c25b1c2d9f5a"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Backend/data-contracts.md",
+   "src_sha256": "1e5c107187edf02717ec869080374039c3a57c276e0be53c68faf26de3153281",
+   "dest": "Archive/gui-vault-backend-mirrors/Backend/data-contracts.md",
+   "dest_sha256": "23784c0b5da7c881509eacf8449371572683522f827b8261b532caa239e8fae1"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Backend/project-overview.md",
+   "src_sha256": "f8e47b7af021b72b39d576c91d58b0443d0149281c55acb04e3b7d23188c1f1e",
+   "dest": "Archive/gui-vault-backend-mirrors/Backend/project-overview.md",
+   "dest_sha256": "12d574a63bd9f6ff56300951f25c3c36840bd6d8d7257dc9d345392f8788225a"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Backend/security.md",
+   "src_sha256": "5d38736270e4d48d1b9b4ce980db684c8e3e709cf0479bb9cd8f70fbd527ff03",
+   "dest": "Archive/gui-vault-backend-mirrors/Backend/security.md",
+   "dest_sha256": "b448bf58c2a2e4604a8c70b300d24026d24da2696697085fcba19125f8797c71"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Claims-and-verification.md",
+   "src_sha256": "c32d6b72f50243ddd101eb86138cb9a39a814faeac7cc31b1190338ea0cebb15",
+   "dest": "GUI/Claims-and-verification.md",
+   "dest_sha256": "b1d19232335a68f545f3622e3f6331063f299c57f25582e86fc56a4ef53cf940"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Decisions/README.md",
+   "src_sha256": "4251fd7020d4beb77b11b16f1bc8a6c46046be7cf6ccc33ac153e33071d7baca",
+   "dest": "Archive/gui-vault-backend-mirrors/Decisions/README.md",
+   "dest_sha256": "681c380478471120c8300bf30cfac2087ba554f4e4f1ace4d69b31090816cf6d"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Decisions/decisions.md",
+   "src_sha256": "f9f6b695517325325fc084fe0d644c95d31fd2739cac7e8fadb9531c755f2fd5",
+   "dest": "Archive/gui-vault-backend-mirrors/Decisions/decisions.md",
+   "dest_sha256": "d22ef1747a5be450cead790b875f70dea34b0facbe633885d47a33adfe0bff58"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Decisions/gotchas.md",
+   "src_sha256": "17d83f3109dfd6e5ca7861ea3fdac3733496d71f7293f0b4e3b2ac5564a8d50c",
+   "dest": "Archive/gui-vault-backend-mirrors/Decisions/gotchas.md",
+   "dest_sha256": "2e3e45445d0bf499716df43607a21e98b3866f099ab59328e332344e7008a66b"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Decisions/risks-and-blockers.md",
+   "src_sha256": "c19a6e8b2dc0ed6f28dedd6fe4319c7566071a19e909e869ada411c7acead5ab",
+   "dest": "Archive/gui-vault-backend-mirrors/Decisions/risks-and-blockers.md",
+   "dest_sha256": "c20b5ee8a0e0a8a43efc7b4b9bea9b842eb0d3e954db030c95bf06decc1e8dc1"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Frontend/README.md",
+   "src_sha256": "504fa3c44ded6e8e7a3eb674541483a0ed0a2a676bc60dde3d51f8aa611a1f65",
+   "dest": "GUI/Frontend/README.md",
+   "dest_sha256": "34f4aa3e0aa1c9edebf375288faf46de0b175a1c3fe6d133a46a7b944361ec10"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Frontend/claims-and-verification.md",
+   "src_sha256": "8d9d08c0a3622efc08ab9d96a98b465ef0ef0f839748ca7ba70823b2366765ab",
+   "dest": "GUI/Frontend/claims-and-verification.md",
+   "dest_sha256": "e82b297ad5483ff1511cceb64c7715aca4fe3761985fcfbc66932ebf36ed1fe6"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Frontend/gui-implementation.md",
+   "src_sha256": "27a5ea9279e6e20875fe53f64b7d0ef05148a5f4ab106b2b6792760ceb3ca175",
+   "dest": "GUI/Frontend/gui-implementation.md",
+   "dest_sha256": "7a172d0d6bd3fe54cedeef3fb998d99cc41e57c57e32633be53db5379ef69005"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Frontend/ownership-and-merge.md",
+   "src_sha256": "37a7b5896bee934a6098a977649fa15a8be4b4f78f3a0718ed4349f091d449cd",
+   "dest": "GUI/Frontend/ownership-and-merge.md",
+   "dest_sha256": "d34579971984b853d8b4093a392d6ea7a449035914d94d7c28421a16414045bb"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Frontend/task-evidence.md",
+   "src_sha256": "f64b4dcc9599ff10c038bca4581310acefbd8bbb08dce8a4590d1913099a0a71",
+   "dest": "GUI/Frontend/task-evidence.md",
+   "dest_sha256": "279b1be325d1a0324264b913b8aae23a0c488a6abef296d99ada450cf37a3581"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/90-claude-session-template.md",
+   "src_sha256": "831328ed613143dc79c76eccddaecfbbd325d07dffcac006d6035041c65a5f1f",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/90-claude-session-template.md",
+   "dest_sha256": "8bb6040ec5f8a89026edd8d8c4ded89250cf6f07e31a68b28cd4f75957455dde"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/README.md",
+   "src_sha256": "8bbd97a4e7992dd8c20bd100577b41a6b64ed4c6f662a0f8e6f7093583486007",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/README.md",
+   "dest_sha256": "2150b9f82af5aa494f3cc340c6faf5702f4e119ced72794adfc0fd35d5298199"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/agent-ownership.md",
+   "src_sha256": "d1ef0189eabdc12afd702775addfc082c00e3fa654520e4c0a63ae91364df6c9",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/agent-ownership.md",
+   "dest_sha256": "0cc5ebaedf998c5f3edc1783c39884d439eb48371f999699f68abdfea56ca572"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/backend-active-phase.md",
+   "src_sha256": "b28cc572182fdbec0dadd61ccaa625d914e2482729c74f238751bca56fc77d3d",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/backend-active-phase.md",
+   "dest_sha256": "3b652eb74b226da622de2fc4f011d4db77cd718f05853f687424057340b8f7ed"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/backend-index.md",
+   "src_sha256": "14d45de5227e5575a954e79c642ef1668331e31e746cc5a5d867b487447a24ce",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/backend-index.md",
+   "dest_sha256": "d872651bf4761d1aec55b78d2315025586f0aaada46a2c90d3158609dc099a7f"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/backend-start-here.md",
+   "src_sha256": "abc393eebcf86702e4a9be4c8f8151ac1f8be233b13bbde6ae220ecf82ac9a3a",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/backend-start-here.md",
+   "dest_sha256": "dfe68fb25ca2a6de6b7c45a2e7598bf0845f704710ee0461e58d76568fa3bccd"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/backend-vault-readme.md",
+   "src_sha256": "0cec0d7b759b111914027f5e284ea1c634b67b5d1dc4cf8fe8db9ff7ca850a55",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/backend-vault-readme.md",
+   "dest_sha256": "a9cb4c27b9c084dc6a6aa0b25c1dd03409a8bf5136501de035243d535678b83e"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/changelog-and-handoffs.md",
+   "src_sha256": "e989aeb62018f95f7949bf91c9c2f5286277f76215629ebd6e11ec91858b9d14",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/changelog-and-handoffs.md",
+   "dest_sha256": "34e3d5f3cfbcdb99cb52e6462a2521022aced9f4b766f9c5afb3e220ce877fba"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/docs-index.md",
+   "src_sha256": "7bf98dfc0ea02ab76cd239ad94ec0968a51a80dec1a845f6176bd950c9f49ff8",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/docs-index.md",
+   "dest_sha256": "6b55603327c71ff214c65cb03f70ffb47b877f619f9fffd4a320be18205a6be0"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/eye-ok.md",
+   "src_sha256": "5782d694cabf2314cb7f2699e18f3acce7788f823600b4a120b871e9adee69d4",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/eye-ok.md",
+   "dest_sha256": "c59da8ed4cc3c69b58a27752f7e4226c7a5a5c3580ba49499feb864e5571a7db"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/next-actions.md",
+   "src_sha256": "83288ee2714ea4a287268e3cfe2fe5141936895fd3bc921cebac993ca02cfe70",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/next-actions.md",
+   "dest_sha256": "45801a472ef6479a77ed9e0782e7d8a919dd1937cd9859c7d7a3bf5f5a48b39b"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/retinacare-current-state.md",
+   "src_sha256": "db8e95f71140a0a000e2ae41ac08a8be5d3408cc43487aef0ad4e78cbc215b2a",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/retinacare-current-state.md",
+   "dest_sha256": "e71c73e00fed3037f1090a6d019a6961a3ce435ec71b550dcced13bc7fa0f31e"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/retinacare-phase-1.md",
+   "src_sha256": "9d7786090beb10a539e7158468a4da8e4095bc988c93629370d8f97aa69cbff3",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/retinacare-phase-1.md",
+   "dest_sha256": "223ce340b9902be2a68e6c7784b82733aa2dc51dd92d6affd60aede7d8a728ac"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Handoffs/working-agreement.md",
+   "src_sha256": "71b22a7890bb026928fd652229f337e8cbb576119556c40ccbd1c65929f89537",
+   "dest": "Archive/gui-vault-backend-mirrors/Handoffs/working-agreement.md",
+   "dest_sha256": "04d377fa86e7907295d4c12468f9068eb54125e98f24a05151ceffe42cba9481"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Models/README.md",
+   "src_sha256": "da518f314fd4c992329b0f15c38eed4d121ed5027c4de56412f181e5f68198bc",
+   "dest": "Archive/gui-vault-backend-mirrors/Models/README.md",
+   "dest_sha256": "5aeb10d9cdd60c47dfbddee983ef02d94e61a8a8a7a02f77c75587644ed6270b"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Models/licensing-and-data.md",
+   "src_sha256": "4ed435d658875288b3f379730aee6fc87e03f9593ac3cf2e2b7a99212fa4491d",
+   "dest": "Archive/gui-vault-backend-mirrors/Models/licensing-and-data.md",
+   "dest_sha256": "38675d9c347743b71bdb70696f8913d6e6418a1a85d7e006a5fb81e4058308f5"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Models/model-inventory.md",
+   "src_sha256": "78ed1215a4cf90730ce926f809b4cf6dcb31f2f488edaa2575e600edf1cbcaed",
+   "dest": "Archive/gui-vault-backend-mirrors/Models/model-inventory.md",
+   "dest_sha256": "43c68d0cd6ca005d0d756916623f524e8cc3bcf7a8752d707fd82f7a29831195"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Models/model-pipeline.md",
+   "src_sha256": "9604cc01030ce47abf6370bc7c332bba7e5b8e2ada0b7091044e04bba741b853",
+   "dest": "Archive/gui-vault-backend-mirrors/Models/model-pipeline.md",
+   "dest_sha256": "289aa60b7904263afa12e4832cfe86c5d60a104d708ad706198eb832a51f0b7f"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Models/stage-i-screening.md",
+   "src_sha256": "d4c63e0dbac0f3b08a07a80de9bf6f69f928a8f239fb27316960c78096e005b1",
+   "dest": "Archive/gui-vault-backend-mirrors/Models/stage-i-screening.md",
+   "dest_sha256": "122469679a94b765737d4ebcecdca0c7220d076104a93889412bc19cffd64fac"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Models/stage-ii-segmentation.md",
+   "src_sha256": "a58de704b8ed000ec220add1bc1799fbc34d3b348082e8fed9d0175657d8fa9d",
+   "dest": "Archive/gui-vault-backend-mirrors/Models/stage-ii-segmentation.md",
+   "dest_sha256": "ed875f84101da0eab7d389dd94bc6bd92717d5604f8928744f5b1dcd4622d4e5"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Models/stage-iii-grading.md",
+   "src_sha256": "80e8f3171d815edf8101469b6ed4924c449038b0d14b1dcfea38d991e6db5c7a",
+   "dest": "Archive/gui-vault-backend-mirrors/Models/stage-iii-grading.md",
+   "dest_sha256": "8980e96b7fdb2aafeb22286224ba21b701d7651b48572592856ca65a34e28b9c"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Testing/README.md",
+   "src_sha256": "fcdaf3f72591c1828179c73b0dec27078202dc32e507f40475313478b93f2752",
+   "dest": "Archive/gui-vault-backend-mirrors/Testing/README.md",
+   "dest_sha256": "7d58d5ea7412d5f37fb882ba5714d5779b3bdbf23541a15ce9c2a18092bc37f0"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Testing/build-and-test.md",
+   "src_sha256": "8a79b4fc1fad95b455e811b32d5bbe47b3406ab577e94b963e7c50467fc31761",
+   "dest": "Archive/gui-vault-backend-mirrors/Testing/build-and-test.md",
+   "dest_sha256": "c2b468a4114e5e737c072cebebab05af7af9998eff23ceae2cf78c812205de56"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/Testing/cuda-and-packaging.md",
+   "src_sha256": "9ecd9fc272f7e42ec1cc86b0708c2a33fbf634b1a112b6b97f6113de3ef4dadb",
+   "dest": "Archive/gui-vault-backend-mirrors/Testing/cuda-and-packaging.md",
+   "dest_sha256": "9c47a6b296875c2b9532d63a47d87c1f2779042dc69a857e90a8f450c929db0d"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/active-phase.md",
+   "src_sha256": "1a4406ac6afa935303096a1d331404e8f31d5b9171a799a6ca019634caa998d2",
+   "dest": "GUI/gui-active-phase.md",
+   "dest_sha256": "168a6e43465414c1d060a6205d8ee70bea29b3ccea49aa75a0d339e686af8f08"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/chat-interface-architecture.md",
+   "src_sha256": "f8cd050f1c784bef7413ce99e5623e2783b0b545a512eb5755eed5734748db3d",
+   "dest": "GUI/chat-interface-architecture.md",
+   "dest_sha256": "fdfed2c9dd9cbf125f5e95e592da525d6839c3c35f3db2a6ba65cf678900f997"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/clinical-report-and-export.md",
+   "src_sha256": "525ae79c13bd3bd5e7c998085360ad46c5cc691fa59145f4a60d446f1a0e1eb5",
+   "dest": "GUI/clinical-report-and-export.md",
+   "dest_sha256": "c091c3c0c224bbb4df87eb9d81f1b90e2604a067556b980b8f9d5460147a7a21"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/clinical-timeline.md",
+   "src_sha256": "0d682e12e2cec0a84d8e774625fad5ac83e86b313ac2057c5cb6cc378a817c8e",
+   "dest": "GUI/clinical-timeline.md",
+   "dest_sha256": "1947908d1480cca6dcf2f01ecda0caad33cf7ed3326d5dd4ff05df4322048023"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/decisions.md",
+   "src_sha256": "706467ad975e091efa86a205a2546940f9df8db6b5b9c47a6020288058ec260a",
+   "dest": "GUI/decisions.md",
+   "dest_sha256": "fd82c36ec9f41d19bdde60038c3619c663c80ab8fcf0c719fc9e976f79ff1f18"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/gotchas.md",
+   "src_sha256": "231979ad28157369344c890e38bf290f5ac666218a29d1cf3a7f7abdaf25a729",
+   "dest": "GUI/gotchas.md",
+   "dest_sha256": "74fe8382339de3c2084c4ace1f02b4c6ae1f49d5a6d9cad8db46eb013c7f3a58"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/home-page-architecture.md",
+   "src_sha256": "879f7dbb3103ea7da61d4bc91e8820b97f255b97ce97fa791fe05c6bca1dcec1",
+   "dest": "GUI/home-page-architecture.md",
+   "dest_sha256": "f1ce5598d5baac63c214b47569a64a49fe8a7e03181852cbce13a9affb560f0a"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/image-analysis-and-canvas-specs.md",
+   "src_sha256": "d9e41cbc28599501d755f373029ed23d7b6e9da9951d9ae91f4e86cf490d4633",
+   "dest": "GUI/image-analysis-and-canvas-specs.md",
+   "dest_sha256": "5083123792247ed8e3edf0ab0c637925159a57516a71c2e9a6f69ceab4a97ef7"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/multimodal-ingestion-and-hierarchiretina.md",
+   "src_sha256": "3fd68339f8ea6830bc7ac5a348f95500e28e14b06205243748fd52df18733f55",
+   "dest": "GUI/multimodal-ingestion-and-hierarchiretina.md",
+   "dest_sha256": "5dc9338a3e153721ebc5199d2860ebbbe54b239e0907849bcc05bcceb38023a8"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/outer-edge-inset-shell.md",
+   "src_sha256": "61d7cb9a1cd89cbfb799e3a9d0c8edb8d0186881dc9610e970b0f89d423538ae",
+   "dest": "GUI/outer-edge-inset-shell.md",
+   "dest_sha256": "81ca78a895a10293d86cc1f41b1f55b86ac463dc523dd16906515924529b01a7"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/patient-examinations.md",
+   "src_sha256": "6027a721fbe0c9fe48bf25095d5dcffe0732078b0ecf0e995715d6f47a986b0e",
+   "dest": "GUI/patient-examinations.md",
+   "dest_sha256": "057cead2da82a1f7dde45d906343dc276f41edc00e6e6f94941890d5950d1e08"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/patient-navigation.md",
+   "src_sha256": "d65263c9dd01280655dc9746403d3bd844897eab1c8840629fe90387a3ff75f9",
+   "dest": "GUI/patient-navigation.md",
+   "dest_sha256": "764c71fabc6ba118debdceae5bc572b642785b4838b39c7fdce7b1d5e510b816"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/pixel-accurate-frame-recreation.md",
+   "src_sha256": "4546f6bb57778c08da39d718c30ec8e42700599b44ba4ece9a48d870654b87bd",
+   "dest": "GUI/pixel-accurate-frame-recreation.md",
+   "dest_sha256": "768ebf1d3d1f9be14c7e1ec5d72ad45670b0fee00310f45fd4e2cef256615342"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/plugins-deck-and-mcp-pipeline.md",
+   "src_sha256": "6ed07e0ef6ae99a53e44ab482e08f22aabd75f0f19bd72734eaf3cabd033d915",
+   "dest": "GUI/plugins-deck-and-mcp-pipeline.md",
+   "dest_sha256": "8c0f5fa95c9fe23e8499ce9ad43ca84737a8c5b9b99f3cb7ab156c9ae1d30a71"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/previous-chats-folder-system.md",
+   "src_sha256": "93bb9dded6b257912964caf728c86ff8ce34128718f6e9fa0f6ce02903a52b86",
+   "dest": "GUI/previous-chats-folder-system.md",
+   "dest_sha256": "52165f51af0bfc84d873d9ae87b7e061b44d8f98e0556575bf558874f97a6996"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/retinacare-current-state.md",
+   "src_sha256": "77083bb76e14ddb0a284798d54bc5d0032d846abd834161cdf660004151a767b",
+   "dest": "GUI/gui-current-state.md",
+   "dest_sha256": "d9ee060e20fa9d1d466f2d9f4d00f2faf2c9f2c59b772e222d3edf616922b069"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/retinal-viewer-architecture.md",
+   "src_sha256": "1987eeff762c5d0db266442f65b13cb52ee370c0b5c9c61e654b9a264db8eafc",
+   "dest": "GUI/retinal-viewer-architecture.md",
+   "dest_sha256": "0227b8923e50f89a43e4777cec5f39f70c572e39f26966b85e5d122b700656b6"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/security.md",
+   "src_sha256": "fb8dfcd3e3cde57ed0c2c451ad58072d0797ef3946d8b262b0f6c09a207c8440",
+   "dest": "GUI/security.md",
+   "dest_sha256": "ed7309cb3b996e221a0db0eeffe6b9ffd371fa910c324c476e5da2f94f61cc30"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/tech-stack-and-architecture.md",
+   "src_sha256": "aa1cebc71cbd4f262d348c2bc095372167a2137a15bd46ec4c0ce9092cd48c05",
+   "dest": "GUI/tech-stack-and-architecture.md",
+   "dest_sha256": "fec3db15361022d644b4b14e505c801a67f9d7beea6e6105a584be3f5a35db19"
+  },
+  {
+   "source": "gui",
+   "src": "/home/claude/Desktop/Dird/GUI/Hackthon dezine/memory/technical-handbook.md",
+   "src_sha256": "49efb497e6f3a7caa4fca680e9c72d7d264d3f09a0c3c56b6441dd7140c473d9",
+   "dest": "GUI/technical-handbook.md",
+   "dest_sha256": "74022eca5b122a6ae56c8c9118cca6093993bb25c3e51a573eef1fccd804284e"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/00-index.md",
+   "src_sha256": "845ab87e5dd10a592103b4c801d3cb0618f1caa9a9f54d6e214380a1d42a3ba8",
+   "dest": "Archive/dird-memory-pre-consolidation/00-index.md",
+   "dest_sha256": "48f8f4c6d495c5d93980ea27091bd79993f41d465178b3f3ac4fb1951893ef2a"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/01-claude-start-here.md",
+   "src_sha256": "bd014e16b9865ae988d26329b7e8a89996774cdfd161cdc06232df0f5a6370a7",
+   "dest": "Archive/dird-memory-pre-consolidation/01-claude-start-here.md",
+   "dest_sha256": "4963d2c9577f106b34376d440f6c0f8c251644fd5aadbd99322d40ef5a65689d"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/90-claude-session-template.md",
+   "src_sha256": "bdca395c12350b7cefa69af06912f83f5bd52b2b9e472e026f806f1bd273f05e",
+   "dest": "Archive/dird-memory-pre-consolidation/90-claude-session-template.md",
+   "dest_sha256": "e4f3bf0e5e253a97a6b8aa4d493aa136f338044532e696c4c36232933414accb"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/README.md",
+   "src_sha256": "217a4fd1296a655ae1402261dfed6344e5a1487db90810c0e03efd82c322369c",
+   "dest": "Archive/dird-memory-pre-consolidation/README.md",
+   "dest_sha256": "59438369d4ad40059e135391277fa2c680bb5240c3a322bc0b295f8c9bdf0c47"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/active-phase.md",
+   "src_sha256": "f4b8a6d0f9779b87fe677380603587e12ca6921682aa6528f038877c98145fba",
+   "dest": "Archive/dird-memory-pre-consolidation/active-phase.md",
+   "dest_sha256": "7f4a003563d20f6f6637bff445f8cec90ae85a19c872b6a73081fcc3a6e288ee"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/agent-ownership.md",
+   "src_sha256": "2aff0fa0551b8ac69f12cee6a09776eee6a0f27e2d142e11a1544e6233f59f94",
+   "dest": "Archive/dird-memory-pre-consolidation/agent-ownership.md",
+   "dest_sha256": "ecfa07d0604c62218b295bec71e0170f41830d755e0b2f51456d3825dfa04d6e"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/architecture.md",
+   "src_sha256": "7e016e576cf01873391e46981c3e0d71159bb9be4fd19844762413a0e6a8d5c3",
+   "dest": "Archive/dird-memory-pre-consolidation/architecture.md",
+   "dest_sha256": "afaa8f32cdf4f2aa9fad8eff99445434704efa76eb0d3cccb6f9acd5773d4e2d"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/architecture-overview.md",
+   "src_sha256": "4b5792ae5f4a4cae87a244b7ce71783b927ee76da530ab61030a178c30aa6562",
+   "dest": "Archive/dird-memory-pre-consolidation/architecture-overview.md",
+   "dest_sha256": "e8e1fba28f7da0b409bc80b91b3971bbd655ed79a8b2d5aa1bc870a16eca2419"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/build-and-test.md",
+   "src_sha256": "2133248d5a8711fb4cc061248b9fd38414bb4fa1ee64b7f0d53d7c216525e75b",
+   "dest": "Archive/dird-memory-pre-consolidation/build-and-test.md",
+   "dest_sha256": "f70ee7f8653bf56369b1558a546f3ba49300d7a4d34cb102c22233f470fe294c"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/changelog-and-handoffs.md",
+   "src_sha256": "e8094575888b0fb789e1a0065d58d4242ddc2fb805ef5914a7de8ac7bd2f2b9e",
+   "dest": "Archive/dird-memory-pre-consolidation/changelog-and-handoffs.md",
+   "dest_sha256": "003f2fd1e5801dcd0c44183685e784749071bdcb37b71c598130218d05d4208e"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/cuda-and-packaging.md",
+   "src_sha256": "637befa4e94ec9623a8bc06eea480851df02d7cdca772b1b7cadb76508393737",
+   "dest": "Archive/dird-memory-pre-consolidation/cuda-and-packaging.md",
+   "dest_sha256": "a263fa89352c84081c998282903b9f95b397d9e42bc699216e80f6c29ac20526"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/data-contracts.md",
+   "src_sha256": "7a0c93b47e6c0d356c43abc32142182e2bc78dcdbb60636055da4d13404c0a99",
+   "dest": "Archive/dird-memory-pre-consolidation/data-contracts.md",
+   "dest_sha256": "2c7a7e05243aa225fefe4dcd674f1713f183051d12719eb7826ff8064d3ebf9c"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/decisions.md",
+   "src_sha256": "d42b9cd9b4e3a62010dd327410f77df3c6bbfc27b165c448e51d1b5ce7e4d227",
+   "dest": "Archive/dird-memory-pre-consolidation/decisions.md",
+   "dest_sha256": "876aca32a1caf4b8175b28704a5455b5759b7d6782a4c7b7e4d4b055afe4e251"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/docs-index.md",
+   "src_sha256": "382f5458e080fcf66350bce60daa85dbdd685a38c040344d78b97459c31144b6",
+   "dest": "Archive/dird-memory-pre-consolidation/docs-index.md",
+   "dest_sha256": "f0cdea86b902dee28e5a9f32233a7051bcae65092c69590374617ea8cec1c46a"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/eye-ok.md",
+   "src_sha256": "5782d694cabf2314cb7f2699e18f3acce7788f823600b4a120b871e9adee69d4",
+   "dest": "Archive/dird-memory-pre-consolidation/eye-ok.md",
+   "dest_sha256": "df7304aaa6a671dee3c7c0f16555ee0b5cb41ee563d0ecd3055945ce7e46751a"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/gotchas.md",
+   "src_sha256": "bf3045b16f2a2eb52949bfa42c7aeb0546377e917f226d042383e88f9870bc30",
+   "dest": "Archive/dird-memory-pre-consolidation/gotchas.md",
+   "dest_sha256": "5e78ab47ea2cc2d386657ad7d3c679083440a30fe132508017fa602d4cbf2ee4"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/graph-overview.md",
+   "src_sha256": "7684ed3410267d86f9ae4edb41ed8b351cd77e7055bc2ab0666d38c877e08ffd",
+   "dest": "Archive/dird-memory-pre-consolidation/graph-overview.md",
+   "dest_sha256": "93d2760a6282586aeba0cce36abad8ab0cd4c5420475130adc8e3ff2b45d203e"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/gui-implementation.md",
+   "src_sha256": "4372199d73d595d112cdd5c2790d393d66e22a4f04c311c1a7360c6031a1bfe7",
+   "dest": "Archive/dird-memory-pre-consolidation/gui-implementation.md",
+   "dest_sha256": "caa25d8e422af1113f42abf2ac816807ddcae8fe14e4177aae720e4abcefb50c"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/licensing-and-data.md",
+   "src_sha256": "73c34b49dd564e7124f17d9336b94662ad85da7cd149b11db04b880dde16e1d9",
+   "dest": "Archive/dird-memory-pre-consolidation/licensing-and-data.md",
+   "dest_sha256": "dd72dbf2658d09a531700114b14c4a53f0b71a1e13c7a39cb6bd93eb13be68aa"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/model-inventory.md",
+   "src_sha256": "d82eea47859698cf6d3e91247ae2e743eae825f008b2142dd7bc927605f18e34",
+   "dest": "Archive/dird-memory-pre-consolidation/model-inventory.md",
+   "dest_sha256": "8bb36082d6e9fa6d42c70c498517eb806c511a3ac7e899512e9417789ddc6b09"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/model-pipeline.md",
+   "src_sha256": "9c01f3dc4df8e49402c2e52bed46319049805fc284948d8f4b70722e85c907ef",
+   "dest": "Archive/dird-memory-pre-consolidation/model-pipeline.md",
+   "dest_sha256": "e1ac1f8a4e0a9d1be634294589180254526d9feaeff6d42d1daefb1603f68e8e"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/next-actions.md",
+   "src_sha256": "d222026195bd039559101d1b15781ef31a3987a302e89ab87f904d5b6e9c8b69",
+   "dest": "Archive/dird-memory-pre-consolidation/next-actions.md",
+   "dest_sha256": "2b8382ab39f51e013f258b61df881f8570e279f69b73d14f07d5f1c217cf6901"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/project-overview.md",
+   "src_sha256": "415fd5f5b7efe1cf17b8395eac45d050fb577ef0c6be8f5f0de2f94d856a6a64",
+   "dest": "Archive/dird-memory-pre-consolidation/project-overview.md",
+   "dest_sha256": "6e99b6025d610b3444ff973d0cd63bb376a0e97dfbcb0d232525dd63e3594acc"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/retinacare-current-state.md",
+   "src_sha256": "66722c464ff0f7fc28d35d8b4a610e192bf5a9e7f8405fb846f52408748e0968",
+   "dest": "Archive/dird-memory-pre-consolidation/retinacare-current-state.md",
+   "dest_sha256": "8b79e4f907ca2128cc7faee39698a2fffacd839e518678edb4ccb85d12f6d8c3"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/retinacare-phase-1.md",
+   "src_sha256": "c441f412f4a3dbd61fee70ccbcde0eebc57f0924892ce96035d7b7313d14b1b2",
+   "dest": "Archive/dird-memory-pre-consolidation/retinacare-phase-1.md",
+   "dest_sha256": "87232ed55d342f461ae641fe163e9b32dc6b770496f0c9622f0aff61290900fa"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/risks-and-blockers.md",
+   "src_sha256": "a7e330a5dc4cf31d1f9b60f6f3c99e2e365e7b3c268731a94a872eddc443cec0",
+   "dest": "Archive/dird-memory-pre-consolidation/risks-and-blockers.md",
+   "dest_sha256": "f40aee40905fdb698a3bb0dfa909bda04fc6b2deeeac2202c72986c880c5a917"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/security.md",
+   "src_sha256": "fd68ab37c2c769feb9b9e466656281990f3d28c0febcb171022aa8864c2109c9",
+   "dest": "Archive/dird-memory-pre-consolidation/security.md",
+   "dest_sha256": "df9a54800f9e77af2fedb385c43bc7bd09e10a6904bcaf96150d6a3a99a050e1"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/source-map.md",
+   "src_sha256": "3a97b37aad9f3bfb5c9fc8306ba847cd2c08ee3c1f70020e07ad58a9361160fd",
+   "dest": "Archive/dird-memory-pre-consolidation/source-map.md",
+   "dest_sha256": "c51c9cf95b8bcfa44d6103e1b0d1e267c690822c2924b3ca9259129661732171"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/stage-i-screening.md",
+   "src_sha256": "adb2c638cf33d95176ae0e0faff3145da624d8b4721d554136391088b51537de",
+   "dest": "Archive/dird-memory-pre-consolidation/stage-i-screening.md",
+   "dest_sha256": "bb709125f04ee75c23559f02b4fe00ad6f0dc3ff5e213168434ac2ac14803a2e"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/stage-ii-segmentation.md",
+   "src_sha256": "69715a572e19b77ba1e3813906a180a63abcf71d13b0ec5ebb67bd8203a67134",
+   "dest": "Archive/dird-memory-pre-consolidation/stage-ii-segmentation.md",
+   "dest_sha256": "5683b1474a11e0a7c860e018d0898d4f85adbaeb63a7f5c0a6ea641c7d6baa87"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/stage-iii-grading.md",
+   "src_sha256": "a50c45d8d462f8cd8a28c26dc3bc3d816665a82f5fa7b1e60a1537d816c82656",
+   "dest": "Archive/dird-memory-pre-consolidation/stage-iii-grading.md",
+   "dest_sha256": "916dfbe8802575da991bc73bd05a6f9ae7b15f4e6767a66ed895e3dc3da868bf"
+  },
+  {
+   "source": "stale",
+   "src": "/home/claude/Desktop/Dird/memory/working-agreement.md",
+   "src_sha256": "f3f5d99ac5196edf258ac927ff81ad6970ea116744b7bfa48ee7621aec2ed9be",
+   "dest": "Archive/dird-memory-pre-consolidation/working-agreement.md",
+   "dest_sha256": "70077fe950e42c14632aa640384d6beb247422bf7f179b5bbc67779f5de282d8"
+  }
+ ],
+ "unresolved": []
+}

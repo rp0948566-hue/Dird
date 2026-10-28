@@ -2743,6 +2743,7 @@ dependencies = [
  "retinacare-ai-bridge",
  "retinacare-domain",
  "retinacare-persistence",
+ "serde",
  "serde_json",
  "zeroize",
 ]

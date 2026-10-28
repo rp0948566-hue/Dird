@@ -1,52 +1,24 @@
 ---
-title: Claude read-first handoff
+title: Claude read-first
 type: onboarding
-domain: agent-handoff
 status: VERIFIED
 verified_on: 2026-10-28
-source_refs: ["../AGENTS.md", "../native/Cargo.toml"]
-owner: Claude
-tags: [handoff, read-first]
 ---
 # Claude: start here
 
-## Two-minute path
+1. Read [[00-index]], [[active-phase]], [[Handoffs/next-actions]]. Stop; open more only for the task.
+2. `git status --short --branch` in `/home/claude/Desktop/Dird` AND `Dird/GUI/Hackthon dezine`. They are separate repos ([[Integration/repo-topology]]).
+3. Preserve uncommitted work. Never reset/clean. Never `git add`/`push` in the GUI repo without user OK (its CLAUDE.md). No commit/push in either repo without approval.
+4. Backend crates: `Dird/native/crates/` (Codex/Claude). GUI: `Dird/GUI/Hackthon dezine/rust/src` (Antigravity) — coordinate before editing.
+5. Do not extend `ModelEvent` / `ModelSubmitError`; the GUI matches them exhaustively. Use `AnalysisEvent` ([[Integration/readiness-report]]).
+6. Check [[Decisions/gotchas]] before building. Research-only model limits: [[Models/licensing-and-data]].
 
-Read `AGENTS.md`, [[00-index]], this note, [[active-phase]], [[next-actions]],
-and [[agent-ownership]]. For the assigned task, add [[architecture]],
-[[model-pipeline]], [[source-map]], [[risks-and-blockers]] and one phase note.
+## Checks
+- Backend: `cargo test --workspace --manifest-path native/Cargo.toml` (+ fmt, clippy -D warnings).
+- GUI: in `GUI/Hackthon dezine/rust`: `cargo fmt --all -- --check`, `cargo test`, `cargo clippy --all-targets -- -D warnings`, `cargo build --release`; heavy real-model tests: `cargo test -- --ignored`.
+- Launch the one app: `cd "GUI/Hackthon dezine/rust" && ./target/release/retinacare` (DB password prompt on Patients; `RETINACARE_DB_PATH` overrides the DB file; `RETINACARE_DEV_FIXTURES=1` = labelled fixtures only).
+- Headless screenshots: Xvfb + `env -u WAYLAND_DISPLAY WINIT_UNIX_BACKEND=x11`; never `pkill` by a loose pattern (it can hit other sessions' processes).
+- Python worker: `python -m unittest discover -s ai_engine/tests`.
 
-## Ten-minute architecture path
-
-Read [[architecture]], [[source-map]], [[agent-ownership]], [[model-pipeline]],
-[[data-contracts]], [[security]] and [[risks-and-blockers]]. Then inspect only
-the source symbols needed for the task.
-
-## Before editing
-
-- Check `git status --short --branch` in every affected repository.
-- Confirm owner, exact paths, current phase gate, acceptance criteria and any
-  uncommitted work. Preserve changes; never reset or clean.
-- Read target code and callers. Treat reports as leads; cite actual code or
-  recorded test output. Do not run large model jobs for documentation work.
-- Antigravity owns `/home/claude/Desktop/Hackthon dezine/rust/src/` GUI.
-  Codex/Claude owns Dird `native/crates/` backend. Coordinate before crossing.
-
-## After editing
-
-Run focused tests and applicable full gates; report only commands actually run.
-Update [[active-phase]], [[next-actions]], [[changelog-and-handoffs]] and the
-relevant domain note. Record limits and file paths. Never claim diagnosis,
-clinical validation, GPU execution or GUI test results without evidence.
-
-## Copy-ready startup message
-
-Use /home/claude/Desktop/Dird/memory as this repo-local project context. Read
-AGENTS.md, memory/00-index.md, memory/01-claude-start-here.md,
-memory/active-phase.md, memory/next-actions.md and memory/agent-ownership.md.
-Then read architecture, source-map, risks and only the assigned phase note.
-Check Git status before edits. Preserve all existing changes. Codex/Claude owns
-the Dird backend; Antigravity owns the separate GUI repo. Do not copy or merge
-memory into the configured sibling Obsidian vault until the user chooses the
-canonical folder. Implement only the assigned task, verify it, and update
-memory before handoff.
+## After the task
+Update [[active-phase]], [[Handoffs/next-actions]], [[Handoffs/changelog-and-handoffs]]. Real results only; never claim clinical validation, CUDA runs or GUI results without evidence.

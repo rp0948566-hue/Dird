@@ -7,6 +7,7 @@ license.workspace = true
 [dependencies]
 retinacare-ai-bridge = { path = "../retinacare-ai-bridge" }
 retinacare-domain = { path = "../retinacare-domain" }
+serde.workspace = true
 serde_json.workspace = true
 retinacare-persistence = { path = "../retinacare-persistence" }
 zeroize = "1"

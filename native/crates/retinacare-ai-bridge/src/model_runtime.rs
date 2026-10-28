@@ -1,8 +1,14 @@
 //! Loaded-session lifecycle for verified, single-input/single-output ONNX models.
+use crate::stage2_preprocessing::read_stage2_source;
 use crate::stage2_vessel::{
     VESSEL_PREPROCESSING_VERSION, preprocess_stage2_vessel_image, restore_stage2_vessel_mask,
     vessel_tta_probabilities,
 };
+use crate::stage3_grading::{
+    CORN_THRESHOLDS, FOLD_CHECKPOINT_SHA256, GRADABILITY_THRESHOLD, Stage3GradeResult,
+    Stage3InferenceError, Stage3Request, Stage3Scope, grade_single_fold,
+};
+use crate::stage3_input::assemble_stage3_input;
 use crate::{
     device::ProviderRequest,
     onnx_session::{SessionError, VerifiedSession},
@@ -352,6 +358,81 @@ impl ModelRuntime {
         Ok(result)
     }
 
+    /// Run one authentic LG-DRG fold on the eight-channel input assembled from verified Stage II masks.
+    /// The result is a SINGLE-FOLD TECHNICAL TEST, not the final five-fold ensemble.
+    pub fn infer_stage3_fold(
+        &mut self,
+        request: &Stage3Request,
+    ) -> Result<Stage3GradeResult, Stage3InferenceError> {
+        if request.examination_id <= 0 {
+            return Err(Stage3InferenceError::InvalidRequest(
+                "examination id must be positive",
+            ));
+        }
+        let session = self
+            .sessions
+            .get_mut(&request.model_id)
+            .ok_or_else(|| ModelRuntimeError::NotLoaded(request.model_id.clone()))?;
+        let model = session.model();
+        let fold = (0..FOLD_CHECKPOINT_SHA256.len())
+            .find(|fold| model.model_id == format!("hierarchiretina-stage3-lgdrg-fold{fold}"))
+            .ok_or(Stage3InferenceError::IncompatibleModel)?;
+        let checkpoint_sha256 = model
+            .validation
+            .as_ref()
+            .and_then(|value| value.get("checkpoint_sha256"))
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned);
+        let source_commit = model
+            .validation
+            .as_ref()
+            .and_then(|value| value.get("source_commit"))
+            .and_then(serde_json::Value::as_str);
+        if model.version != "1.0.0"
+            || model.architecture != "LG-DRG-ConvNeXtV2-L"
+            || model.task != "lg_drg_grading"
+            || model.input_shape != [1, 8, 512, 512]
+            || model.output_schema != "lgdrg_logits"
+            || model.output_shape != [1, 4]
+            || checkpoint_sha256.as_deref() != Some(FOLD_CHECKPOINT_SHA256[fold])
+            || source_commit != Some("bf84b1d3c7409d2575dff84c7575c67577493a30")
+        {
+            return Err(Stage3InferenceError::IncompatibleModel);
+        }
+        let model_version = model.version.clone();
+        let model_sha256 = model.sha256.clone();
+        let provider = session.actual_provider();
+        let started = Instant::now();
+        let encoded = read_stage2_source(&request.image_path)?;
+        let input = assemble_stage3_input(&encoded, request.examination_id, &request.masks)?;
+        let logits = session.run(&input.tensor)?;
+        let decoded = grade_single_fold(&logits)?;
+        Ok(Stage3GradeResult {
+            examination_id: request.examination_id,
+            source_image_sha256: input.image_sha256,
+            scope: Stage3Scope::SingleFoldTechnicalTest { fold: fold as u8 },
+            model_version,
+            checkpoint_sha256: vec![FOLD_CHECKPOINT_SHA256[fold].to_owned()],
+            model_sha256: vec![model_sha256],
+            severity_logits: Some(decoded.severity_logits),
+            gradability_logit: Some(decoded.gradability_logit),
+            full_probabilities: decoded.full,
+            ordinal_probabilities: [
+                decoded.probabilities[0],
+                decoded.probabilities[1],
+                decoded.probabilities[2],
+            ],
+            gradable_probability: decoded.probabilities[3],
+            corn_thresholds: CORN_THRESHOLDS,
+            gradability_threshold: GRADABILITY_THRESHOLD,
+            grade: decoded.grade,
+            ungradable: decoded.grade == 5,
+            provider,
+            elapsed_microseconds: started.elapsed().as_micros(),
+            research_only: true,
+        })
+    }
+
     /// Drop the session and release its runtime-owned resources.
     pub fn unload(&mut self, model_id: &str) -> bool {
         self.sessions.remove(model_id).is_some()
@@ -485,6 +566,109 @@ mod tests {
             result.elapsed_microseconds,
         );
         assert_eq!(disagreements, 0, "Rust/PyTorch vessel mask mismatch");
+    }
+
+    #[test]
+    fn stage3_rejects_bad_examination_and_unloaded_model_before_reading_the_image() {
+        let mut runtime = ModelRuntime::default();
+        let request = |examination_id| Stage3Request {
+            examination_id,
+            image_path: Path::new("does-not-exist.png").into(),
+            masks: Vec::new(),
+            model_id: "missing".into(),
+        };
+        assert!(matches!(
+            runtime.infer_stage3_fold(&request(0)),
+            Err(Stage3InferenceError::InvalidRequest(_))
+        ));
+        assert!(matches!(
+            runtime.infer_stage3_fold(&request(5)),
+            Err(Stage3InferenceError::Runtime(ModelRuntimeError::NotLoaded(id))) if id == "missing"
+        ));
+    }
+
+    #[test]
+    #[ignore = "local-only: set RETINACARE_STAGE3_MANIFEST, RETINACARE_STAGE3_IMAGE and RETINACARE_STAGE3_MASK_DIR"]
+    fn local_stage3_single_fold_grades_demo_image_and_matches_pytorch_logits() {
+        use crate::stage3_input::tests::mask_result;
+        use sha2::{Digest, Sha256};
+        let manifest = std::path::PathBuf::from(
+            std::env::var("RETINACARE_STAGE3_MANIFEST").expect("set the LG-DRG fold manifest path"),
+        );
+        let image_path = std::path::PathBuf::from(
+            std::env::var("RETINACARE_STAGE3_IMAGE").expect("set the local technical test image"),
+        );
+        let mask_dir = std::path::PathBuf::from(
+            std::env::var("RETINACARE_STAGE3_MASK_DIR")
+                .expect("set the raw Stage II mask directory"),
+        );
+        let encoded = std::fs::read(&image_path).unwrap();
+        let sha = hex::encode(Sha256::digest(&encoded));
+        let side = 640u32; // the technical demo frame is square
+        let masks: Vec<_> = crate::stage3_input::STAGE3_MASK_ORDER
+            .iter()
+            .zip(["ma", "he", "ex", "cws", "vessel"])
+            .map(|(kind, name)| {
+                let pixels =
+                    std::fs::read(mask_dir.join(format!("{name}_pytorch_mask.u8"))).unwrap();
+                mask_result(*kind, 21, &sha, side, pixels)
+            })
+            .collect();
+        let mut runtime = ModelRuntime::default();
+        let loaded = runtime.load(&manifest, ProviderRequest::Cpu).unwrap();
+        let result = runtime
+            .infer_stage3_fold(&Stage3Request {
+                examination_id: 21,
+                image_path,
+                masks,
+                model_id: loaded.model_id,
+            })
+            .unwrap();
+        let manifest_json: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+        let cases = manifest_json["validation"]["pytorch_vs_onnxruntime_cpu"]["cases"]
+            .as_array()
+            .unwrap();
+        let case = cases
+            .iter()
+            .find(|case| case["input"].as_str().unwrap().starts_with("demo image"))
+            .expect("manifest records the demo-image PyTorch reference");
+        let reference: Vec<f64> = case["pytorch_logits"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|value| value.as_f64().unwrap())
+            .collect();
+        let rust = [
+            result.severity_logits.unwrap()[0],
+            result.severity_logits.unwrap()[1],
+            result.severity_logits.unwrap()[2],
+            result.gradability_logit.unwrap(),
+        ];
+        let worst = rust
+            .iter()
+            .zip(&reference)
+            .map(|(a, b)| (f64::from(*a) - b).abs())
+            .fold(0.0f64, f64::max);
+        eprintln!(
+            "Stage III fold {:?}: logits={rust:?} max_abs_vs_pytorch={worst:.9} grade={} ungradable={} p_gradable={:.6} provider={:?} total_us={}",
+            result.scope,
+            result.grade,
+            result.ungradable,
+            result.gradable_probability,
+            result.provider,
+            result.elapsed_microseconds
+        );
+        assert!(worst <= 1e-3, "logit max diff {worst}");
+        assert_eq!(
+            u64::from(result.grade),
+            case["single_fold_grade_pytorch"].as_u64().unwrap()
+        );
+        assert_eq!(
+            result.scope,
+            crate::stage3_grading::Stage3Scope::SingleFoldTechnicalTest { fold: 0 }
+        );
+        assert!(result.research_only);
     }
 
     fn verify_local_rect_lesion_runtime(model_kind: Stage2ModelKind, model_code: &str) {

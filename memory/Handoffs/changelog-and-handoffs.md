@@ -1,0 +1,173 @@
+---
+title: Changelog and handoffs
+type: changelog
+domain: agent-handoff
+status: VERIFIED
+verified_on: 2026-10-28
+source_refs:
+  - "../../docs/features/P0-01-hierarchiretina-model-loading/stage1-rust-preprocessing-and-inference.md"
+  - "../../docs/features/P0-02-stage2-segmentation/07-test-results.md"
+  - "../../GUI/Hackthon dezine/docs/features/GUI-P05-clinical-report-export/README.md"
+owner: Codex/Claude
+tags: [history, handoff]
+---
+<!-- migrated 2026-10-28 from /home/claude/Desktop/Hackthon dezine/Hackthon Backend/changelog-and-handoffs.md (sha256 b6dacde19686); verify current state in [[active-phase]] -->
+# Changelog and handoffs
+
+## 2026-10-28 — Codex memory-first audit
+
+Updated Dird/memory in place for Claude handoff. Audited backend and GUI
+repository roots, branches, source contracts, model file presence, prior test
+reports and blockers. No source code, models, GUI files or Git history changed.
+Obsidian desktop UI attempt failed in sandbox; see [[Archive/hackthon-backend-superseded/README]].
+
+## 2026-10-28 — P0.2 HE report
+
+Prior Codex record documents authorized HE checkpoint, conversion and CPU
+parity alongside MA. EX, CWS and vessel remain pending. Full record:
+[Stage II tests](../../docs/features/P0-02-stage2-segmentation/07-test-results.md).
+
+## GUI handoffs
+
+Antigravity task reports document GUI Tasks 01–05. Task 05 points to Task 06
+patient/exam management; this is a proposed next GUI task, not authorization
+to edit GUI from Codex. See [[Integration/gui-source-findings]] and [[Handoffs/agent-ownership]].
+
+## File-by-file memory change report
+
+New notes (22):
+
+- README.md — Obsidian opening steps, duplicate vault mapping and UI limits.
+- 01-claude-start-here.md — two-minute, ten-minute and task-scoped reading path.
+- next-actions.md — ordered gates, owners and approvals.
+- agent-ownership.md — separate repos, branches and edit boundaries.
+- source-map.md — exact code files and symbols.
+- project-overview.md — product scope and research-only limit.
+- architecture-overview.md — crate dataflow.
+- model-pipeline.md — official three-stage AI flow.
+- stage-i-screening.md — Stage I artifacts, preprocessing and evidence.
+- model-inventory.md — local asset paths, hashes and license notes.
+- stage-ii-segmentation.md — MA/HE verified path and remaining three models.
+- stage-iii-grading.md — absent model, contract and prerequisites.
+- gui-implementation.md — Tasks 01–05 with reported versus inspected status.
+- data-contracts.md — Stage I/II and GUI boundary types.
+- build-and-test.md — previous test/build evidence and current audit limits.
+- cuda-and-packaging.md — CUDA, Ubuntu/Windows package status.
+- licensing-and-data.md — model rights and image provenance.
+- risks-and-blockers.md — verified mismatch and implementation risks.
+- changelog-and-handoffs.md — dated events and this change inventory.
+- docs-index.md — memory and repository documentation map.
+- 90-claude-session-template.md — future memory update protocol.
+- graph-overview.md — Mermaid map and measured graph audit.
+
+Existing notes updated (10):
+
+- 00-index.md — replaced stale DIRD+ links with the RetinaCare graph hub.
+- active-phase.md — current branch, model statuses, tests and vault ambiguity.
+- architecture.md — preserved as code-level map; clarified two GUI apps and model paths.
+- decisions.md — current model approval and ownership rules.
+- eye-ok.md — retained user note; added minimal Obsidian metadata.
+- gotchas.md — replaced stale status with current reproducible limitations.
+- retinacare-current-state.md — retained filename as redirect to active-phase.
+- retinacare-phase-1.md — preserved initial objective, corrected stale current state.
+- security.md — scoped native SQLCipher versus legacy browser storage and GUI export gaps.
+- working-agreement.md — memory-first workflow metadata and start link.
+
+No application source, Cargo files, checkpoints, external GUI files or Git history
+were changed. The two repositories' prior uncommitted work remains intact.
+
+## 2026-10-28 — Backend vault cleanup
+
+- Owner set Hackthon Backend as the canonical backend vault; GUI vault stays with Antigravity.
+- Dird HEAD reconciled: `9f13b5f` (local, unpushed) on top of `7286cf7`. The commit contains the whole native workspace and memory folder.
+- MA/HE checkpoints and ONNX graphs re-hashed and copied to gitignored `Dird/models/stage2_hsmoe_aunet/`. Originals kept in /tmp.
+- Vault README, 00-index, 01-claude-start-here, active-phase, next-actions, risks, agent-ownership, model-inventory, stage-ii, gotchas, architecture and source-map updated.
+- No source code changed. No tests rerun.
+
+## 2026-10-28 — Phase 2 M0 and M1 (MA/HE)
+
+- M0: upstream v1.0 re-read from pinned commit; `LESION_CONFIGS` thresholds confirmed (MA 0.01, HE 0.20).
+- M1: PyTorch vs ONNX parity on synthetic tensor passes for MA and HE. Rust ORT CPU heavy tests pass on local demo image (technical only).
+- Added `Dird/scripts/stage2_lesion_parity.py` (dev-only parity tool, untracked until committed) and `Dird/docs/features/P0-02-stage2-segmentation/11-m1-ma-he-verification.md`.
+- Dev venv `~/.venvs/retinacare-stage2` (Python 3.12, torch 2.14.1 CPU, timm 1.0.30, onnxruntime 1.31.1). Outside repo.
+- No EX, CWS or VESSEL download. No source change to Rust crates. No GUI change.
+
+## 2026-10-28 — Phase 2 M2 EX download and parity
+
+- EX checkpoint approved by owner, downloaded from official v1.0 release, SHA-256 verified, stored in gitignored `Dird/models/stage2_hsmoe_aunet/ex/`.
+- `scripts/stage2_export_lesion_parity.py` gained an EX spec. EX ONNX exported; PyTorch vs ONNX parity pass on deterministic tensor.
+- Added `Dird/docs/features/P0-02-stage2-segmentation/12-m2-ex-export-parity.md`. Added `models/stage2_hsmoe_aunet/` to `.gitignore`.
+- Not done: Rust EX runtime, image-level EX run, CWS, vessel.
+
+## 2026-10-28 — Phase 2 M2 EX Rust runtime
+
+- EX preprocessing (rect detection, letterbox), probability-based restore and flip TTA added to `retinacare-ai-bridge`.
+- Heavy EX test matches upstream PyTorch reference mask on demo image (0 px disagreement).
+- Gates: fmt, Clippy, workspace tests (62 pass, 8 ignored), release build, diff check pass.
+- Added `Dird/docs/features/P0-02-stage2-segmentation/13-m2-ex-rust-runtime.md` and `scripts/stage2_ex_reference_fixture.py`.
+- Not done: CWS, vessel, EX app-service test, licensed-image acceptance.
+
+## 2026-10-28 — Phase 2 CWS
+
+- CWS checkpoint authorized by owner, downloaded (no prior copy), SHA-256 verified, ONNX exported, parity pass.
+- Rust CWS: rectangle letterbox, flip TTA, closing and component filtering, threshold 0.40. Heavy test and ModelService test match upstream reference (0 px disagreement).
+- Gates pass; workspace 63 passed, 10 ignored.
+- Added `Dird/docs/features/P0-02-stage2-segmentation/14-cws-plan-and-runtime.md`. Renamed fixture script to `scripts/stage2_rect_reference_fixture.py`.
+- VESSEL not downloaded. Stage II not complete.
+
+## 2026-10-28 — Phase 2 CWS
+
+- CWS checkpoint approved and downloaded (SHA verified), exported to ONNX, parity pass.
+- Rust CWS runtime (TTA + closing + component filter) matches upstream reference mask; nonblocking service tests for EX and CWS added.
+- Gates pass; workspace 63 passed, 11 ignored. Evidence: `Dird/docs/features/P0-02-stage2-segmentation/14-cws-plan-and-runtime.md`.
+- Not done: VESSEL, M4 five-mask service, licensed-image acceptance.
+
+## 2026-10-28 — Phase 2 VESSEL and five-mask
+
+- Vessel checkpoint authorized by owner, downloaded (no prior copy), SHA-256 verified. EMA weights exported to ONNX; parity pass.
+- New `stage2_vessel.rs` (FOV, CLAHE, green blend, crop box, 4-view TTA, restore, opening, component filter). Heavy test matches upstream reference (0 px disagreement).
+- Five-mask sequential ModelService test passes. Gates pass; workspace 67 passed, 14 ignored.
+- Docs: `Dird/docs/features/P0-02-stage2-segmentation/15-vessel-plan-and-runtime.md`. Scripts: `stage2_vessel_export_parity.py`, `stage2_vessel_reference_fixture.py`.
+- Still PENDING: licensed-image acceptance, CUDA, mask persistence. Stage II NOT complete. Nothing committed.
+- Committed locally as `8fb2fee` on `main` (2 ahead of origin, not pushed). Model weights, ONNX and manifests stay gitignored.
+
+## 2026-10-28 — Phase 3 M0 (Stage III LG-DRG research and plan)
+
+- Read pinned upstream Stage III code. Confirmed two-head model, 8-channel contract, CORN consecutive decode with t=(0.38,0.60,0.19), gradability 0.10, fold-mean ensemble, no TTA, Stage I gate 0.2391716.
+- No Stage III checkpoint exists locally; nothing downloaded.
+- Added `Dird/docs/features/P0-03-lg-drg-grading/` (README, upstream-research, model-inventory, implementation-plan, testing-plan). Updated [[Models/stage-iii-grading]].
+
+## 2026-10-28 — Phase 3 M2 (no checkpoint needed)
+
+- New `stage3_input.rs` (eight-channel assembler, typed Stage II result validation) and `stage3_grading.rs` (CORN algebra, fold mean, consecutive decode). CLAHE helper shared with the vessel path.
+- Heavy parity: eight-channel tensor equals upstream exactly (all channels, max abs 0) on the demo image with the five verified Stage II masks. CORN/ensemble vectors match upstream (48 and 24 cases).
+- Gates pass; workspace 76 passed, 15 ignored. Docs: `Dird/docs/features/P0-03-lg-drg-grading/m2-eight-channel-and-corn-results.md`. Uncommitted.
+- Next: owner approval for ONE fold download (fold 0). No grade can be produced before that. See [[Models/stage-iii-grading]].
+
+## 2026-10-28 — Phase 3 fold 0 (M1 + M3, single fold)
+
+- Owner approved ONLY fold 0. Downloaded `stage3_lgdrg_best_fold0.pt`, SHA-256 verified, gitignored. Loaded with `weights_only=True` (EMA).
+- ONNX export (one `[1,4]` output) and PyTorch vs ONNX parity (max logit diff 2.9e-6). New `ModelRuntime::infer_stage3_fold` and typed `Stage3GradeResult` (scope SingleFoldTechnicalTest).
+- Heavy Rust test: logits within 5.7e-6 of PyTorch, technical grade 3 on the demo image. Gates pass; workspace 78 passed, 16 ignored. Docs: `Dird/docs/features/P0-03-lg-drg-grading/m1-m3-fold0-export-and-single-fold-results.md`. Uncommitted.
+
+## 2026-10-28 — Phase 3 M5A (Stage I → II → III fold 0 cascade)
+
+- New `retinacare-app/src/cascade.rs` and `ModelService::analyze` / `cancel_analysis` / `try_next_analysis`; existing `ModelEvent` and `ModelSubmitError` untouched (GUI-safe). Sequential load-run-unload; bounded queue (2); duplicate ids rejected; cancel at stage boundaries.
+- Real end-to-end trace on the demo image passed (five masks equal references; technical grade 3; CPU; peak RSS 2.2 GB; 232 s). All 13 heavy tests re-run green. Gates pass; workspace 90 passed, 17 ignored. Docs: `Dird/docs/features/P0-03-lg-drg-grading/m5a-source-audit-and-plan.md`, `m5a-cascade-results.md`. Uncommitted. See [[Models/stage-iii-grading]].
+
+## 2026-10-28 — vault + GUI consolidation (Claude)
+- Backups verified: `/home/claude/Desktop/retinacare-backups/2026-10-28-pre-consolidation/`.
+- GUI relocated to `Dird/GUI/Hackthon dezine` (nested repo kept); parent excludes `/GUI/`. Changed: GUI `rust/Cargo.toml` path deps only.
+- Tests: backend 90 passed/17 ignored, fmt+clippy clean; GUI 119 passed, clippy clean, `cargo fmt --check` fails (pre-existing).
+- Vault consolidated into `Dird/memory` by `scripts/consolidate-vaults.py`; old vaults untouched as backups; stale copies in `Archive/`.
+- Added: [[00-index]], [[01-claude-start-here]], [[active-phase]], [[Handoffs/next-actions]], [[Integration/readiness-report]], [[Integration/repo-topology]]. No commits.
+
+## 2026-10-28 — GUI Stage I adapter swap (Claude, approved by user; uncommitted)
+- GUI `rust/src/engine/`: `backend.rs` (PipelineStage -> Stage1ScreeningGate/Stage2Segmentation/Stage3Grading; manifest discovery via CARGO_MANIFEST_DIR; ignored live test), `manifest.rs` (Stage I = ONNX, VerifiedActive), `report.rs` (model id/hash/provider from the backend result, not constants), `main.rs` (manifest test).
+- Tests: GUI 119 passed + clippy clean; ignored live test loads real Stage I via `LiveCodexBackendService` on demo image: passed (31 s, hash == manifest). Remaining hardcoded hashes are mock/test fixtures only.
+
+## 2026-10-28 — Actual GUI + backend integration (Claude, user-approved, uncommitted)
+- Backend: `retinacare-persistence` schema v2 (audit ledger, analysis/image setters, rollback-safe migration + backup), `retinacare-reports` PDF writer. No cascade/ModelService code changed.
+- GUI: `engine/cascade.rs`, `engine/store.rs`, `ui/cascade_cards.rs`, live patient/audit/PDF services, Quad/Report/Timeline wiring, intake limits, toolbar + narrow-layout fixes, stale-image clearing on patient/exam change, shutdown cancels the running job. Details: [[Integration/gui-backend-integration]].
+- Tests: backend 97 passed/17 ignored; GUI 166 passed/2 ignored (+2 heavy ignored passed on real models); fmt, clippy -D warnings, release builds pass. Evidence folder: `docs/features/GUI-BACKEND-INTEGRATION/`.
+- Models: HE/MA `manifest.json` copied from `/tmp/retinacare-models` into `Dird/models/stage2_hsmoe_aunet/{he,ma}` (sha256 verified equal to the ONNX files; gitignored).

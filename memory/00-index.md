@@ -1,41 +1,30 @@
 ---
-title: RetinaCare project memory index
+title: RetinaCare canonical vault index
 type: index
-domain: project
 status: VERIFIED
 verified_on: 2026-10-28
-source_refs:
-  - "../AGENTS.md"
-  - "../native/Cargo.toml"
-owner: Codex/Claude handoff
-tags: [retinacare, index, obsidian]
 ---
-# RetinaCare memory index
+# RetinaCare vault index (canonical: `Dird/memory`)
 
-This repo-local handoff graph lives at
-`/home/claude/Desktop/Dird/memory`. A configured sibling vault also exists;
-see [[README]] and confirm the canonical vault before transferring notes. This
-index is the graph hub. Start at [[01-claude-start-here]], then [[active-phase]] and
-[[next-actions]]. Open source only as mapped in [[source-map]].
+One vault for backend + GUI. Read in this order: this note, [[01-claude-start-here]], [[active-phase]], [[Handoffs/next-actions]]. Then only the notes the task needs.
 
-## Project and ownership
+| Need | Note |
+|---|---|
+| Where code lives, git rules | [[Integration/repo-topology]] |
+| How GUI↔backend is wired (live) | [[Integration/gui-backend-integration]] |
+| Original adapter plan | [[Integration/readiness-report]] |
+| Who owns what | [[Handoffs/agent-ownership]] |
+| Session history | [[Handoffs/changelog-and-handoffs]] |
+| Architecture | [[Architecture/architecture]], [[Architecture/source-map]] |
+| Models Stage I/II/III | [[Models/model-pipeline]], [[Models/stage-i-screening]], [[Models/stage-ii-segmentation]], [[Models/stage-iii-grading]] |
+| Licensing, data limits | [[Models/licensing-and-data]] |
+| Build/test/CUDA/packaging | [[Testing/build-and-test]], [[Testing/cuda-and-packaging]] |
+| Risks, gotchas, decisions | [[Decisions/risks-and-blockers]], [[Decisions/gotchas]], [[Decisions/decisions]] |
+| Backend data/security | [[Backend/data-contracts]], [[Backend/security]] |
+| GUI notes (Antigravity) | [[GUI/gui-00-index]] |
 
-- [[project-overview]] · [[architecture-overview]] · [[architecture]] · [[agent-ownership]] · [[data-contracts]]
-- [[gui-implementation]] · [[decisions]] · [[working-agreement]]
-- Historical onboarding: [[retinacare-phase-1]] · [[retinacare-current-state]]
-
-## AI pipeline and assets
-
-- [[model-pipeline]] · [[model-inventory]] · [[stage-i-screening]]
-- [[stage-ii-segmentation]] · [[stage-iii-grading]] · [[licensing-and-data]]
-
-## Operations, risks and continuity
-
-- [[build-and-test]] · [[cuda-and-packaging]] · [[security]]
-- [[gotchas]] · [[risks-and-blockers]] · [[next-actions]]
-- [[changelog-and-handoffs]] · [[docs-index]] · [[graph-overview]]
-
-For Obsidian setup, see [[README]]. For session updates use
-[[90-claude-session-template]]. Read only task-relevant notes and source paths.
-
-Personal note preserved unchanged: [[eye-ok]].
+## Rules
+- Canonical vault = `/home/claude/Desktop/Dird/memory`. Edit only here.
+- `Archive/` = read-only history (old vaults, stale mirrors). Never edit; never trust over canonical notes.
+- Old vault copies stay on disk as backups; `scripts/consolidate-vaults.py check memory` flags sources changed after import.
+- After each task: update [[active-phase]], [[Handoffs/next-actions]], [[Handoffs/changelog-and-handoffs]] with results, changed files, tests, blockers.

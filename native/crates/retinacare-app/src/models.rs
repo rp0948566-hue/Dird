@@ -1,4 +1,8 @@
 //! Nonblocking application interface to the native Rust model runtime.
+use crate::cascade::{
+    AnalysisEvent, AnalysisRequest, CascadeModelPaths, CascadeRunner, ModelRuntimeRunner,
+    RequestId, run_cascade,
+};
 use retinacare_ai_bridge::{
     device::ProviderRequest,
     model_registry::{ModelCatalogEntry, ModelRegistry},
@@ -6,9 +10,10 @@ use retinacare_ai_bridge::{
     stage2_contract::{EyeLaterality, Stage2MaskResult, Stage2ModelKind, Stage2Request},
 };
 use std::{
+    collections::HashSet,
     path::PathBuf,
     sync::{
-        Arc,
+        Arc, Mutex,
         atomic::{AtomicBool, Ordering},
         mpsc::{self, Receiver, SyncSender, TryRecvError, TrySendError},
     },
@@ -52,6 +57,7 @@ enum ModelCommand {
     InferStage1(String, Vec<f32>),
     InferStage1Image(String, PathBuf),
     InferStage2Image(Stage2Request),
+    Analyze(Box<AnalysisRequest>, Box<CascadeModelPaths>),
     Stop,
 }
 
@@ -60,23 +66,113 @@ enum ModelCommand {
 pub struct ModelService {
     commands: SyncSender<ModelCommand>,
     events: Receiver<ModelEvent>,
+    analysis_events: Receiver<AnalysisEvent>,
+    analyses: Arc<Mutex<AnalysisBook>>,
     stop: Arc<AtomicBool>,
     thread: Option<JoinHandle<()>>,
 }
 
+/// Why `ModelService::analyze` refused a request. Kept separate from `ModelSubmitError` so that
+/// existing exhaustive matches on that enum keep compiling.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AnalysisSubmitError {
+    QueueFull,
+    Stopped,
+    DuplicateRequest,
+}
+
+/// Requests accepted but not yet finished, and those asked to cancel.
+#[derive(Default)]
+struct AnalysisBook {
+    active: HashSet<RequestId>,
+    cancelled: HashSet<RequestId>,
+}
+
+type InjectedRunner = Box<dyn CascadeRunner + Send>;
+
 impl ModelService {
     pub fn new() -> Self {
+        Self::start(None)
+    }
+
+    /// Test seam: run analyses through a stand-in runner instead of real ONNX models.
+    #[cfg(test)]
+    pub(crate) fn with_runner(runner: InjectedRunner) -> Self {
+        Self::start(Some(runner))
+    }
+
+    fn start(injected: Option<InjectedRunner>) -> Self {
         let (commands, receiver) = mpsc::sync_channel(2);
         let (sender, events) = mpsc::sync_channel(4);
+        let (analysis_sender, analysis_events) = mpsc::sync_channel(64);
+        let analyses = Arc::new(Mutex::new(AnalysisBook::default()));
         let stop = Arc::new(AtomicBool::new(false));
-        let thread_stop = stop.clone();
-        let thread = thread::spawn(move || run_model_service(receiver, sender, thread_stop));
+        let (thread_stop, thread_book) = (stop.clone(), analyses.clone());
+        let thread = thread::spawn(move || {
+            run_model_service(
+                receiver,
+                sender,
+                analysis_sender,
+                thread_book,
+                thread_stop,
+                injected,
+            )
+        });
         Self {
             commands,
             events,
+            analysis_events,
+            analyses,
             stop,
             thread: Some(thread),
         }
+    }
+
+    /// Queue one Stage I -> II -> III analysis. The queue holds at most two commands; further requests
+    /// get `QueueFull` immediately. A request id that is already queued or running is rejected.
+    pub fn analyze(
+        &self,
+        request: AnalysisRequest,
+        paths: CascadeModelPaths,
+    ) -> Result<(), AnalysisSubmitError> {
+        if self.stop.load(Ordering::Relaxed) {
+            return Err(AnalysisSubmitError::Stopped);
+        }
+        let id = request.request_id;
+        {
+            let mut book = self.analyses.lock().unwrap_or_else(|e| e.into_inner());
+            if !book.active.insert(id) {
+                return Err(AnalysisSubmitError::DuplicateRequest);
+            }
+        }
+        let sent = self
+            .commands
+            .try_send(ModelCommand::Analyze(Box::new(request), Box::new(paths)));
+        if let Err(error) = sent {
+            let mut book = self.analyses.lock().unwrap_or_else(|e| e.into_inner());
+            book.active.remove(&id);
+            return Err(match error {
+                TrySendError::Full(_) => AnalysisSubmitError::QueueFull,
+                TrySendError::Disconnected(_) => AnalysisSubmitError::Stopped,
+            });
+        }
+        Ok(())
+    }
+
+    /// Ask a queued or running analysis to stop at its next stage boundary. A model call already
+    /// executing is not interrupted. Returns false when the request is unknown or already finished.
+    pub fn cancel_analysis(&self, request_id: RequestId) -> bool {
+        let mut book = self.analyses.lock().unwrap_or_else(|e| e.into_inner());
+        if book.active.contains(&request_id) {
+            book.cancelled.insert(request_id);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn try_next_analysis(&self) -> Result<AnalysisEvent, TryRecvError> {
+        self.analysis_events.try_recv()
     }
 
     pub fn discover(&self, root: PathBuf) -> Result<(), ModelSubmitError> {
@@ -158,6 +254,7 @@ impl Drop for ModelService {
         if let Some(thread) = self.thread.take() {
             while !thread.is_finished() {
                 while self.events.try_recv().is_ok() {}
+                while self.analysis_events.try_recv().is_ok() {}
                 thread::sleep(Duration::from_millis(5));
             }
             let _ = thread.join();
@@ -168,7 +265,10 @@ impl Drop for ModelService {
 fn run_model_service(
     commands: Receiver<ModelCommand>,
     events: SyncSender<ModelEvent>,
+    analysis_events: SyncSender<AnalysisEvent>,
+    analyses: Arc<Mutex<AnalysisBook>>,
     stop: Arc<AtomicBool>,
+    mut injected: Option<InjectedRunner>,
 ) {
     let mut runtime = ModelRuntime::default();
     while !stop.load(Ordering::Relaxed) {
@@ -212,6 +312,32 @@ fn run_model_service(
                     .infer_stage2_image(&request)
                     .map_err(|error| error.to_string()),
             },
+            ModelCommand::Analyze(request, paths) => {
+                let id = request.request_id;
+                let cancelled = || {
+                    analyses
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .cancelled
+                        .contains(&id)
+                };
+                let mut emit = |event| {
+                    let _ = analysis_events.send(event);
+                };
+                match injected.as_deref_mut() {
+                    Some(runner) => {
+                        run_cascade(runner, &request, &cancelled, &mut emit);
+                    }
+                    None => {
+                        let mut runner = ModelRuntimeRunner::new(&mut runtime, &paths);
+                        run_cascade(&mut runner, &request, &cancelled, &mut emit);
+                    }
+                }
+                let mut book = analyses.lock().unwrap_or_else(|e| e.into_inner());
+                book.active.remove(&id);
+                book.cancelled.remove(&id);
+                continue;
+            }
             ModelCommand::Stop => break,
         };
         if events.send(event).is_err() {

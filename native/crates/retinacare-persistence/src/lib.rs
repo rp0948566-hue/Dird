@@ -39,11 +39,27 @@ pub enum StoreError {
     SaltCommitAfterRekey(std::io::Error),
 }
 
+/// Current on-disk schema version (`PRAGMA user_version`). v2 adds the append-only audit ledger.
+pub const SCHEMA_VERSION: i64 = 2;
+
+/// One append-only audit record. Holds identifiers and statuses only, never image bytes or secrets.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AuditRecord {
+    pub id: i64,
+    pub recorded_at: String,
+    pub event_type: String,
+    pub patient_id: Option<i64>,
+    pub examination_id: Option<i64>,
+    pub status: String,
+    pub detail: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PatientRecord {
     pub id: i64,
     pub patient_code: String,
     pub display_name: String,
+    pub created_at: String,
 }
 
 pub struct SqlCipherStore {
@@ -124,14 +140,15 @@ impl SqlCipherStore {
     }
 
     pub fn list_patients(&self) -> Result<Vec<PatientRecord>, StoreError> {
-        let mut statement = self
-            .connection
-            .prepare("SELECT id, patient_code, display_name FROM patients ORDER BY id DESC")?;
+        let mut statement = self.connection.prepare(
+            "SELECT id, patient_code, display_name, created_at FROM patients ORDER BY id DESC",
+        )?;
         let rows = statement.query_map([], |row| {
             Ok(PatientRecord {
                 id: row.get(0)?,
                 patient_code: row.get(1)?,
                 display_name: row.get(2)?,
+                created_at: row.get(3)?,
             })
         })?;
         Ok(rows.collect::<Result<Vec<_>, _>>()?)
@@ -246,6 +263,112 @@ impl SqlCipherStore {
         Ok(rows.collect::<Result<Vec<_>, _>>()?)
     }
 
+    /// Replace the stored analysis summary of one examination. The JSON must be a compact summary:
+    /// the 1 MiB cap rejects raw mask or image payloads.
+    pub fn set_examination_analysis(
+        &self,
+        examination_id: i64,
+        analysis_json: &str,
+    ) -> Result<(), StoreError> {
+        if analysis_json.len() > 1_048_576 {
+            return Err(StoreError::InvalidInput);
+        }
+        if self.connection.execute(
+            "UPDATE examinations SET analysis_json = ?1 WHERE id = ?2",
+            params![analysis_json, examination_id],
+        )? != 1
+        {
+            return Err(StoreError::InvalidInput);
+        }
+        Ok(())
+    }
+
+    /// Attach the eye and source image path to an examination.
+    pub fn set_examination_image(
+        &self,
+        examination_id: i64,
+        eye: &str,
+        image_path: &str,
+    ) -> Result<(), StoreError> {
+        if !matches!(eye, "" | "left" | "right") || image_path.len() > 4096 {
+            return Err(StoreError::InvalidInput);
+        }
+        if self.connection.execute(
+            "UPDATE examinations SET eye = ?1, image_path = ?2 WHERE id = ?3",
+            params![eye, image_path, examination_id],
+        )? != 1
+        {
+            return Err(StoreError::InvalidInput);
+        }
+        Ok(())
+    }
+
+    pub fn get_patient(&self, id: i64) -> Result<Option<PatientRecord>, StoreError> {
+        let mut statement = self.connection.prepare(
+            "SELECT id, patient_code, display_name, created_at FROM patients WHERE id = ?1",
+        )?;
+        let mut rows = statement.query_map(params![id], |row| {
+            Ok(PatientRecord {
+                id: row.get(0)?,
+                patient_code: row.get(1)?,
+                display_name: row.get(2)?,
+                created_at: row.get(3)?,
+            })
+        })?;
+        Ok(rows.next().transpose()?)
+    }
+
+    /// Append one audit event. There is no update or delete API and database triggers reject both.
+    pub fn append_audit_event(
+        &self,
+        event_type: &str,
+        patient_id: Option<i64>,
+        examination_id: Option<i64>,
+        status: &str,
+        detail: &str,
+    ) -> Result<i64, StoreError> {
+        if event_type.trim().is_empty()
+            || event_type.len() > 64
+            || status.len() > 64
+            || detail.len() > 1024
+        {
+            return Err(StoreError::InvalidInput);
+        }
+        self.connection.execute(
+            "INSERT INTO audit_events (recorded_at, event_type, patient_id, examination_id, status, detail) VALUES (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), ?1, ?2, ?3, ?4, ?5)",
+            params![event_type, patient_id, examination_id, status, detail],
+        )?;
+        Ok(self.connection.last_insert_rowid())
+    }
+
+    /// Newest first. `examination_id = None` returns every event.
+    pub fn list_audit_events(
+        &self,
+        examination_id: Option<i64>,
+    ) -> Result<Vec<AuditRecord>, StoreError> {
+        let mut statement = self.connection.prepare(
+            "SELECT id, recorded_at, event_type, patient_id, examination_id, status, detail FROM audit_events WHERE (?1 IS NULL OR examination_id = ?1) ORDER BY id DESC",
+        )?;
+        let rows = statement.query_map(params![examination_id], |row| {
+            Ok(AuditRecord {
+                id: row.get(0)?,
+                recorded_at: row.get(1)?,
+                event_type: row.get(2)?,
+                patient_id: row.get(3)?,
+                examination_id: row.get(4)?,
+                status: row.get(5)?,
+                detail: row.get(6)?,
+            })
+        })?;
+        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+    }
+
+    pub fn schema_version(&self) -> Result<i64, StoreError> {
+        Ok(self
+            .connection
+            .query_row("PRAGMA user_version", [], |row| row.get(0))?)
+    }
+
     pub fn database_path(&self) -> &Path {
         &self.database_path
     }
@@ -280,6 +403,53 @@ impl SqlCipherStore {
                     "ALTER TABLE examinations ADD COLUMN {column} {definition}"
                 ))?;
             }
+        }
+        self.migrate_to_current()
+    }
+
+    /// Additive, transactional migration. An existing database is copied to `<db>.pre-v<N>.bak`
+    /// before any change so a failed or unwanted migration can be rolled back by restoring the copy.
+    fn migrate_to_current(&self) -> Result<(), StoreError> {
+        let version = self.schema_version()?;
+        if version >= SCHEMA_VERSION {
+            return Ok(());
+        }
+        let has_data = self
+            .connection
+            .query_row("SELECT count(*) FROM patients", [], |row| {
+                row.get::<_, i64>(0)
+            })?
+            > 0;
+        if has_data {
+            let mut backup = self.database_path.as_os_str().to_os_string();
+            backup.push(format!(".pre-v{SCHEMA_VERSION}.bak"));
+            let backup = PathBuf::from(backup);
+            if !backup.exists() {
+                fs::copy(&self.database_path, &backup)?;
+            }
+        }
+        let applied = self.connection.execute_batch(
+            "BEGIN;
+             CREATE TABLE IF NOT EXISTS audit_events (
+               id INTEGER PRIMARY KEY,
+               recorded_at TEXT NOT NULL,
+               event_type TEXT NOT NULL,
+               patient_id INTEGER,
+               examination_id INTEGER,
+               status TEXT NOT NULL DEFAULT '',
+               detail TEXT NOT NULL DEFAULT ''
+             );
+             CREATE TRIGGER IF NOT EXISTS audit_events_no_update BEFORE UPDATE ON audit_events
+               BEGIN SELECT RAISE(ABORT, 'audit_events is append-only'); END;
+             CREATE TRIGGER IF NOT EXISTS audit_events_no_delete BEFORE DELETE ON audit_events
+               BEGIN SELECT RAISE(ABORT, 'audit_events is append-only'); END;
+             PRAGMA user_version = 2;
+             COMMIT;",
+        );
+        if let Err(error) = applied {
+            // A failed statement leaves the transaction open: undo it so nothing half-applied stays.
+            let _ = self.connection.execute_batch("ROLLBACK");
+            return Err(StoreError::Sqlite(error));
         }
         Ok(())
     }
@@ -512,5 +682,140 @@ mod production_tests {
         let bytes = fs::read(&path).unwrap();
         assert_ne!(&bytes[..16], b"SQLite format 3\0");
         fs::remove_dir_all(dir).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod integration_tests {
+    use super::*;
+
+    fn temp_db(name: &str) -> PathBuf {
+        std::env::temp_dir().join(format!(
+            "retinacare-int-{name}-{}-{}/db.sqlite",
+            std::process::id(),
+            rand::random::<u64>()
+        ))
+    }
+
+    #[test]
+    fn analysis_summary_and_image_survive_reopen() {
+        let path = temp_db("analysis");
+        let (pid, eid) = {
+            let store = SqlCipherStore::open(&path, "pw").unwrap();
+            let pid = store.add_patient("P-1", "Name").unwrap();
+            let eid = store.add_examination(pid, "op", "n").unwrap();
+            store
+                .set_examination_image(eid, "right", "/x/y.png")
+                .unwrap();
+            store
+                .set_examination_analysis(eid, r#"{"state":"graded"}"#)
+                .unwrap();
+            assert!(store.set_examination_image(eid, "up", "").is_err());
+            assert!(store.set_examination_analysis(eid + 99, "{}").is_err());
+            assert_eq!(store.get_patient(pid).unwrap().unwrap().patient_code, "P-1");
+            assert!(store.get_patient(pid + 1).unwrap().is_none());
+            (pid, eid)
+        };
+        let store = SqlCipherStore::open(&path, "pw").unwrap();
+        let exam = store.list_examinations().unwrap().remove(0);
+        assert_eq!((exam.id, exam.patient_id), (Some(eid), pid));
+        assert_eq!(exam.eye, "right");
+        assert_eq!(exam.analysis_json, r#"{"state":"graded"}"#);
+    }
+
+    #[test]
+    fn audit_ledger_is_append_only_and_scoped() {
+        let path = temp_db("audit");
+        let store = SqlCipherStore::open(&path, "pw").unwrap();
+        assert_eq!(store.schema_version().unwrap(), SCHEMA_VERSION);
+        let pid = store.add_patient("P-2", "Name").unwrap();
+        let a = store.add_examination(pid, "", "").unwrap();
+        let b = store.add_examination(pid, "", "").unwrap();
+        store
+            .append_audit_event("analysis_finished", Some(pid), Some(a), "graded", "req 1")
+            .unwrap();
+        store
+            .append_audit_event("report_exported", Some(pid), Some(b), "ok", "")
+            .unwrap();
+        assert_eq!(store.list_audit_events(None).unwrap().len(), 2);
+        let only_a = store.list_audit_events(Some(a)).unwrap();
+        assert_eq!(only_a.len(), 1);
+        assert_eq!(only_a[0].event_type, "analysis_finished");
+        assert!(store.append_audit_event("", None, None, "", "").is_err());
+        for sql in [
+            "UPDATE audit_events SET status = 'x'",
+            "DELETE FROM audit_events",
+        ] {
+            assert!(store.connection.execute(sql, []).is_err(), "{sql}");
+        }
+        assert_eq!(store.list_audit_events(None).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn v1_database_is_backed_up_then_migrated_without_data_loss() {
+        let path = temp_db("migrate");
+        {
+            let store = SqlCipherStore::open(&path, "pw").unwrap();
+            store.add_patient("P-3", "Old").unwrap();
+            store
+                .connection
+                .execute_batch("DROP TABLE audit_events; PRAGMA user_version = 0;")
+                .unwrap();
+        }
+        let store = SqlCipherStore::open(&path, "pw").unwrap();
+        assert_eq!(store.schema_version().unwrap(), SCHEMA_VERSION);
+        assert_eq!(store.list_patients().unwrap().len(), 1);
+        let mut backup = path.as_os_str().to_os_string();
+        backup.push(format!(".pre-v{SCHEMA_VERSION}.bak"));
+        assert!(PathBuf::from(backup).exists());
+        drop(store);
+        assert!(SqlCipherStore::open(&path, "wrong").is_err());
+    }
+}
+
+#[cfg(test)]
+mod migration_failure_tests {
+    use super::*;
+
+    #[test]
+    fn a_failed_migration_rolls_back_keeps_data_and_leaves_a_backup() {
+        let path = std::env::temp_dir().join(format!(
+            "retinacare-migfail-{}-{}/db.sqlite",
+            std::process::id(),
+            rand::random::<u64>()
+        ));
+        {
+            let store = SqlCipherStore::open(&path, "pw").unwrap();
+            store.add_patient("P-9", "Keep Me").unwrap();
+            // Force the v2 migration to fail: an object named audit_events that is not a table.
+            store
+                .connection
+                .execute_batch(
+                    "DROP TABLE audit_events; CREATE VIEW audit_events AS SELECT 1 AS id; PRAGMA user_version = 0;",
+                )
+                .unwrap();
+        }
+        let key_probe = SqlCipherStore::open(&path, "pw");
+        assert!(
+            key_probe.is_err(),
+            "the migration failure must be reported, not hidden"
+        );
+        // Re-open the raw connection: data intact, version unchanged, backup present.
+        let salt = fs::read(path.with_extension("salt")).unwrap();
+        let connection = open_with_key(&path, "pw", &salt).unwrap();
+        let count: i64 = connection
+            .query_row("SELECT count(*) FROM patients", [], |row| row.get(0))
+            .unwrap();
+        let version: i64 = connection
+            .query_row("PRAGMA user_version", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!((count, version), (1, 0));
+        assert!(
+            connection.is_autocommit(),
+            "no transaction may be left open"
+        );
+        let mut backup = path.as_os_str().to_os_string();
+        backup.push(format!(".pre-v{SCHEMA_VERSION}.bak"));
+        assert!(PathBuf::from(backup).exists());
     }
 }

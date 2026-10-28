@@ -3,7 +3,8 @@ use crate::stage2_contract::{ImageRect, Stage2ModelKind, Stage2SpatialTransform}
 use image::{ImageFormat, ImageReader};
 use opencv::{
     core::{self, Mat, MatTraitConst, MatTraitConstManual, Point, Point2f, Size, Vector},
-    imgcodecs, imgproc,
+    imgcodecs,
+    imgproc::{self, CLAHETrait},
 };
 use sha2::{Digest, Sha256};
 use std::{
@@ -57,6 +58,26 @@ pub struct PreprocessedStage2LesionImage {
     pub tensor: Vec<f32>,
     pub transform: Stage2SpatialTransform,
     pub preprocessing_version: &'static str,
+}
+
+/// CLAHE on the LAB lightness channel of an RGB image (upstream `apply_clahe` / `clahe_lab`).
+pub(crate) fn clahe_lab(rgb: &Mat, clip: f64, tile: i32) -> Result<Mat, Stage2PreprocessError> {
+    let mut lab = Mat::default();
+    imgproc::cvt_color_def(rgb, &mut lab, imgproc::COLOR_RGB2Lab)?;
+    let mut channels = Vector::<Mat>::new();
+    core::split(&lab, &mut channels)?;
+    let mut clahe = imgproc::create_clahe(clip, Size::new(tile, tile))?;
+    let mut equalized = Mat::default();
+    clahe.apply(&channels.get(0)?, &mut equalized)?;
+    let mut merged_channels = Vector::<Mat>::new();
+    merged_channels.push(equalized);
+    merged_channels.push(channels.get(1)?);
+    merged_channels.push(channels.get(2)?);
+    let mut merged = Mat::default();
+    core::merge(&merged_channels, &mut merged)?;
+    let mut out = Mat::default();
+    imgproc::cvt_color_def(&merged, &mut out, imgproc::COLOR_Lab2RGB)?;
+    Ok(out)
 }
 
 /// Read an encoded source image from disk with the Stage II size and file-type limits.

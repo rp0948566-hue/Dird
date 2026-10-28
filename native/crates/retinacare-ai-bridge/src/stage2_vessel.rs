@@ -5,6 +5,7 @@
 //! square FOV crop, 512 resize, ImageNet normalisation, 4-view flip TTA, FOV-masked
 //! restore, `>= 0.46` threshold, full-frame FOV, 3x3 opening and components under 30 px removed.
 use crate::stage2_contract::{ImageRect, Stage2SpatialTransform};
+use crate::stage2_preprocessing::clahe_lab;
 use crate::stage2_preprocessing::{
     Stage2PreprocessError, decode_stage2_source, flip_planes_hv, read_stage2_source,
 };
@@ -13,7 +14,7 @@ use opencv::{
         self, Mat, MatExprTraitConst, MatTrait, MatTraitConst, MatTraitConstManual, MatTraitManual,
         Point, Scalar, Size, Vector,
     },
-    imgproc::{self, CLAHETrait},
+    imgproc,
 };
 use sha2::{Digest, Sha256};
 use std::path::Path;
@@ -56,7 +57,7 @@ pub fn preprocess_stage2_vessel_bytes(
     let frame_fov_mat = generate_fov(&decoded.image)?;
     let mut rgb = Mat::default();
     imgproc::cvt_color_def(&decoded.image, &mut rgb, imgproc::COLOR_BGR2RGB)?;
-    let enhanced = enhance_green(&apply_clahe(&rgb)?)?;
+    let enhanced = enhance_green(&clahe_lab(&rgb, 2.0, 8)?)?;
     let (x1, y1, x2, y2) = fov_crop_box(&frame_fov_mat)?;
     let crop_rect = core::Rect::new(x1, y1, x2 - x1, y2 - y1);
     let crop = Mat::roi(&enhanced, crop_rect)?;
@@ -201,27 +202,6 @@ fn largest_contour_index(
         }
     }
     Ok(selected.map(|(_, index)| index))
-}
-
-/// Upstream `apply_clahe`: CLAHE (clip 2.0, 8x8 tiles) on the LAB lightness channel.
-fn apply_clahe(rgb: &Mat) -> Result<Mat, Stage2PreprocessError> {
-    let mut lab = Mat::default();
-    imgproc::cvt_color_def(rgb, &mut lab, imgproc::COLOR_RGB2Lab)?;
-    let mut channels = Vector::<Mat>::new();
-    core::split(&lab, &mut channels)?;
-    let mut clahe = imgproc::create_clahe(2.0, Size::new(8, 8))?;
-    let lightness = channels.get(0)?;
-    let mut equalized = Mat::default();
-    clahe.apply(&lightness, &mut equalized)?;
-    let mut merged_channels = Vector::<Mat>::new();
-    merged_channels.push(equalized);
-    merged_channels.push(channels.get(1)?);
-    merged_channels.push(channels.get(2)?);
-    let mut merged = Mat::default();
-    core::merge(&merged_channels, &mut merged)?;
-    let mut out = Mat::default();
-    imgproc::cvt_color_def(&merged, &mut out, imgproc::COLOR_Lab2RGB)?;
-    Ok(out)
 }
 
 /// Upstream `enhance_green`: blend the green channel with its histogram-equalised version.

@@ -114,3 +114,4 @@ __pycache__/
 # Stage II persistent weights and their conversion manifests (verified; never committed)
 models/stage2_hsmoe_aunet/
 models/stage2_swinhrunetpp/
+models/stage3_lgdrg/
