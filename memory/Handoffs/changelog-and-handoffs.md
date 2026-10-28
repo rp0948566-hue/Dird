@@ -198,3 +198,12 @@ were changed. The two repositories' prior uncommitted work remains intact.
 - Files: GUI `rust/src/ui/patients.rs`, `ui/theme.rs`, `engine/patient.rs`. No backend or AI code changed.
 - Verified: fmt, clippy -D warnings, GUI tests 170 passed / 2 ignored, release build; real desktop screenshots at 1600x900, 1280x820, 1024x768, 700x650 plus locked, first-use, empty, no-match and filter states; register, search, filters and refresh driven in the live app. Evidence: `docs/features/GUI-PATIENTS-REDESIGN/`.
 - Not committed or pushed. Not redesigned: profile, exam detail, Previous Chats, Timeline, Report.
+
+## 2026-10-28 - Supabase Stage A (design, nothing applied)
+- Added `supabase/migrations/20261028120000_chat_persistence.sql` (draft), `supabase/design/patient_cloud_design.sql` (design only), `docs/features/SUPABASE-INTEGRATION/README.md`, [[Backend/supabase-architecture]]. Project reachable (empty public schema); keyring available. No cloud change, no Rust change. Awaiting SQL approval.
+- 2026-10-28 (later): migration `chat_persistence` applied to `ebflochdtajcflmlhgqa` and verified (5 tables, forced RLS, 3 storage policies, private bucket, no anon grants, security advisors 0 findings, performance INFO only). Next: Stage B.
+
+## 2026-10-28 - Phase 3 five-fold ensemble (uncommitted)
+- Approved downloads of folds 1-4 (official v1.0, SHA-256 verified; fold 4 needed one retry). ONNX export and PyTorch/Rust parity for all folds; installed pandas, scikit-learn, albumentations into `ai_engine/.venv` (dev only).
+- Code: `stage3_grading.rs` (`grade_five_fold_ensemble`, `combine_five_folds`), `retinacare-app/src/cascade.rs` (`stage3_other_folds`, `grade_cancellable`, `collect_folds`), `model_runtime.rs` (heavy test reads the fold), GUI `engine/{cascade,report,manifest}.rs`, `ui/{cascade_cards,viewer}.rs`, `main.rs` test text. 12 new backend tests, 2 new GUI tests.
+- Verified: backend 134/0/18 ignored, GUI 172/0/2 ignored, fmt, check, clippy, release; heavy five-fold cascade and GUI-adapter run; live desktop save, restart, restore. Evidence: `docs/features/P3-five-fold-ensemble/`.
