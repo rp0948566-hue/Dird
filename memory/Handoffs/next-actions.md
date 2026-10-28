@@ -6,7 +6,7 @@ verified_on: 2026-10-28
 ---
 # Next actions (ordered)
 
-1. **User decision**: review the uncommitted work and approve local commits (parent `Dird` main; GUI nested repo `dezine`; no push). Antigravity's pre-existing GUI edits are mixed into the same files.
+1. **User decision**: backend push target. `Debaq/Dird` returns 403; code already lives on `AI-Manthan-2.0` (`main` `0997866`, `backend-rust`). Also approve committing the new vault edits (README, `.obsidian`, state note) if wanted. Snapshot: [[Integration/project-state-sync-2026-10-28]].
 2. Obtain an authorized/licensed retinal image set: real negative-route and ungradable runs, formal Stage I/II/III acceptance (still BLOCKED).
 3. Persist masks (versioned artifact files + manifest, atomic) so a saved exam reopens with pixels, not just the summary.
 4. CUDA run on the RTX 5070 (needs a real GPU session; `ort` CUDA provider untested) and a Windows run.

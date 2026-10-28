@@ -18,5 +18,6 @@ verified_on: 2026-10-28
 - GUI Cargo path deps: `../../../native/crates/retinacare-{ai-bridge,app}` (verified by build).
 - Two Cargo lockfiles/targets (backend `native/`, GUI `rust/`) are independent; do not share target dirs.
 - GUI CLAUDE.md: never `git add`/`git push` without asking the user.
-- Local commits 2026-10-28 (not pushed): parent `main` `45f4feb`; GUI `dezine` `574f8f9`. Two Antigravity task PDFs in the GUI root were left untracked.
+- Commits 2026-10-28: parent `main` `01f4cb7` (unpushed to `Debaq/Dird`, 403); GUI `dezine` `4814064` (pushed). Two Antigravity task PDFs in the GUI root stay untracked.
+- Remote `rp0948566-hue/AI-Manthan-2.0` `main` = `0997866`: one combined tree (backend at root, GUI under `GUI/Hackthon dezine/`), built without touching local worktrees. Local stays two repos. Details: [[Integration/project-state-sync-2026-10-28]].
 - Restore/rollback: `/home/claude/Desktop/retinacare-backups/2026-10-28-pre-consolidation/` (bundles, patches, tarballs, SHA256SUMS).

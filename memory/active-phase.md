@@ -18,7 +18,7 @@ Measured (CPU, release GUI, OD-1.png 640x640): 67-74 s end to end, peak RSS 2.95
 - Negative route and ungradable: verified with scripted events and backend tests, not with a real image (none available).
 - CUDA, Windows, licensed-image acceptance, folds 1-4/ensemble, explainability (Phase 4): not done.
 - Plain-JSON session export screen shows its warning; its write path was not exercised in the final desktop session.
-- Committed locally, NOT pushed: parent `main` `45f4feb` (3 ahead of origin), GUI `dezine` `574f8f9`. Vault edits after those commits are uncommitted.
+- Git: parent `main` `01f4cb7` (4 ahead of `Debaq/Dird`, push 403); GUI `dezine` `4814064` pushed. `AI-Manthan-2.0` `main` = `0997866` (backend + GUI combined), `backend-rust` = `01f4cb7`. Vault edits made after 2026-10-28 sync (README, `.obsidian`, state note) are uncommitted. Full table: [[Integration/project-state-sync-2026-10-28]].
 - Tests (final): backend 97 passed/17 ignored; GUI 166 passed/2 ignored (+2 heavy real-model tests passed); fmt, clippy, release builds clean.
 
 Next: [[Handoffs/next-actions]].

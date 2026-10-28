@@ -171,3 +171,9 @@ were changed. The two repositories' prior uncommitted work remains intact.
 - GUI: `engine/cascade.rs`, `engine/store.rs`, `ui/cascade_cards.rs`, live patient/audit/PDF services, Quad/Report/Timeline wiring, intake limits, toolbar + narrow-layout fixes, stale-image clearing on patient/exam change, shutdown cancels the running job. Details: [[Integration/gui-backend-integration]].
 - Tests: backend 97 passed/17 ignored; GUI 166 passed/2 ignored (+2 heavy ignored passed on real models); fmt, clippy -D warnings, release builds pass. Evidence folder: `docs/features/GUI-BACKEND-INTEGRATION/`.
 - Models: HE/MA `manifest.json` copied from `/tmp/retinacare-models` into `Dird/models/stage2_hsmoe_aunet/{he,ma}` (sha256 verified equal to the ONNX files; gitignored).
+
+## 2026-10-28 - post-compaction state sync (documentation only)
+- Verified: git state of both repos, legacy vault pointers (4 copies), sensitive-file scan (clean), vault links (727 ok).
+- Rerun: backend fmt/clippy/release pass, tests 97 passed / 0 failed / 17 ignored; GUI fmt/clippy/release pass, tests 166 passed / 0 failed / 2 ignored. Heavy model tests, CUDA, Windows not rerun.
+- Pushes this session (user-approved): GUI `dezine` `4814064`; `AI-Manthan-2.0` `main` force-replaced then fast-forwarded to combined `0997866`; backend to `backend-rust` `01f4cb7`. `Debaq/Dird` still 403.
+- Files: new `README.md`, `.obsidian/app.json`, `Integration/project-state-sync-2026-10-28.md`; edited `00-index`, `active-phase`, `Handoffs/next-actions`, `Integration/repo-topology`. No source code changed. Uncommitted.

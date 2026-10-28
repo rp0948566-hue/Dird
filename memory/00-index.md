@@ -10,6 +10,7 @@ One vault for backend + GUI. Read in this order: this note, [[01-claude-start-he
 
 | Need | Note |
 |---|---|
+| Vault entry / full state snapshot | [[README]], [[Integration/project-state-sync-2026-10-28]] |
 | Where code lives, git rules | [[Integration/repo-topology]] |
 | How GUI↔backend is wired (live) | [[Integration/gui-backend-integration]] |
 | Original adapter plan | [[Integration/readiness-report]] |
