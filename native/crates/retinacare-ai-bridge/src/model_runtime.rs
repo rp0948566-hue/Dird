@@ -664,9 +664,15 @@ mod tests {
             u64::from(result.grade),
             case["single_fold_grade_pytorch"].as_u64().unwrap()
         );
+        let fold = manifest_json["validation"]["fold"].as_u64().unwrap() as u8;
         assert_eq!(
             result.scope,
-            crate::stage3_grading::Stage3Scope::SingleFoldTechnicalTest { fold: 0 }
+            crate::stage3_grading::Stage3Scope::SingleFoldTechnicalTest { fold }
+        );
+        assert_eq!(
+            result.checkpoint_sha256,
+            vec![crate::stage3_grading::FOLD_CHECKPOINT_SHA256[usize::from(fold)].to_owned()],
+            "the manifest's fold must carry that fold's pinned release hash"
         );
         assert!(result.research_only);
     }

@@ -58,3 +58,6 @@ Gotchas: run the heavy tests alone (CPU/RAM); under Xvfb unset `WAYLAND_DISPLAY`
 
 ## 2026-10-28 - P2 final gates
 Backend `cargo test --workspace` 120 passed, 0 failed, 18 ignored. GUI `cargo test` 170 passed, 0 failed, 2 ignored. fmt, clippy `-D warnings`, release builds and `git diff --check` pass in both. Heavy real-model GUI test passed earlier (63.7 s, 2826 MiB). Logs: `docs/features/P2-mask-persistence/evidence/`.
+
+## 2026-10-28 - Phase 3 gates
+Backend 134 passed / 0 failed / 18 ignored; GUI 172 / 0 / 2. Heavy: per-fold Rust parity (folds 0-4), five-fold cascade (54.9 s, 2.15 GiB), GUI-adapter cascade (55.4 s). fmt, check, clippy -D warnings, release builds pass. Details: `docs/features/P3-five-fold-ensemble/README.md`.

@@ -14,7 +14,10 @@ use retinacare_ai_bridge::{
         EyeLaterality, MaskPixelData, Stage2InferenceError, Stage2MaskResult, Stage2ModelKind,
         Stage2Request,
     },
-    stage3_grading::{Stage3GradeResult, Stage3InferenceError, Stage3Request, Stage3Scope},
+    stage3_grading::{
+        FOLD_CHECKPOINT_SHA256, Stage3GradeResult, Stage3InferenceError, Stage3Request,
+        Stage3Scope, combine_five_folds,
+    },
     stage3_input::{STAGE3_MASK_ORDER, Stage3InputError},
 };
 use serde::Serialize;
@@ -61,6 +64,9 @@ pub struct CascadeModelPaths {
     pub cws: PathBuf,
     pub vessel: PathBuf,
     pub stage3_fold0: PathBuf,
+    /// Manifests of folds 1-4 in order. Empty = single-fold technical test (fold 0 only); exactly four =
+    /// the official five-fold ensemble. Any other count is a configuration error, never a partial grade.
+    pub stage3_other_folds: Vec<PathBuf>,
 }
 
 impl CascadeModelPaths {
@@ -236,6 +242,20 @@ pub enum AnalysisEvent {
 
 /// The three kinds of model work the state machine needs. Real inference lives behind this trait so
 /// the routing can be tested deterministically without weights.
+/// Why Stage III produced no grade.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GradeFailure {
+    /// Stopped at a fold boundary because the request was cancelled.
+    Cancelled,
+    Failed(StageFailureKind),
+}
+
+impl From<StageFailureKind> for GradeFailure {
+    fn from(kind: StageFailureKind) -> Self {
+        Self::Failed(kind)
+    }
+}
+
 pub trait CascadeRunner {
     fn screening(
         &mut self,
@@ -251,6 +271,17 @@ pub trait CascadeRunner {
         request: &AnalysisRequest,
         masks: &[Stage2MaskResult],
     ) -> Result<Stage3GradeResult, StageFailureKind>;
+
+    /// Grading that may run several folds and stops between folds when cancelled. The default is the
+    /// single `grade` call; an in-flight ONNX call itself cannot be interrupted.
+    fn grade_cancellable(
+        &mut self,
+        request: &AnalysisRequest,
+        masks: &[Stage2MaskResult],
+        _is_cancelled: &dyn Fn() -> bool,
+    ) -> Result<Stage3GradeResult, GradeFailure> {
+        self.grade(request, masks).map_err(GradeFailure::Failed)
+    }
 }
 
 struct Run {
@@ -432,9 +463,12 @@ pub fn run_cascade(
         stage: AnalysisStage::Grading,
     });
     let stage_started = Instant::now();
-    let grading = match runner.grade(request, &run.report.masks) {
+    let grading = match runner.grade_cancellable(request, &run.report.masks, is_cancelled) {
         Ok(result) => result,
-        Err(failure) => return terminal(run.fail(AnalysisStage::Grading, failure), emit),
+        Err(GradeFailure::Cancelled) => return terminal(run.cancel(AnalysisStage::Grading), emit),
+        Err(GradeFailure::Failed(failure)) => {
+            return terminal(run.fail(AnalysisStage::Grading, failure), emit);
+        }
     };
     run.report.timings.push(StageTiming {
         stage: AnalysisStage::Grading,
@@ -442,7 +476,7 @@ pub fn run_cascade(
     });
     let valid = grading.examination_id == request.examination_id
         && grading.source_image_sha256 == source_sha
-        && grading.scope == (Stage3Scope::SingleFoldTechnicalTest { fold: 0 })
+        && grading_scope_is_consistent(&grading)
         && grading.research_only
         && (1..=5).contains(&grading.grade)
         && grading.ungradable == (grading.grade == 5);
@@ -472,6 +506,41 @@ pub fn run_cascade(
     };
     run.report.grading = Some(grading);
     terminal(run.finish(state), emit)
+}
+
+/// A single-fold result must carry fold 0's pinned checkpoint hash; an ensemble must carry all five, in order.
+fn grading_scope_is_consistent(grading: &Stage3GradeResult) -> bool {
+    let pinned = |hashes: &[String], expected: &[&str]| {
+        hashes.len() == expected.len() && hashes.iter().zip(expected).all(|(a, b)| a == b)
+    };
+    match grading.scope {
+        Stage3Scope::SingleFoldTechnicalTest { fold: 0 } => {
+            pinned(&grading.checkpoint_sha256, &FOLD_CHECKPOINT_SHA256[..1])
+                && grading.model_sha256.len() == 1
+        }
+        Stage3Scope::FiveFoldEnsemble => {
+            pinned(&grading.checkpoint_sha256, &FOLD_CHECKPOINT_SHA256)
+                && grading.model_sha256.len() == 5
+        }
+        Stage3Scope::SingleFoldTechnicalTest { .. } => false,
+    }
+}
+
+/// Run the folds strictly one after another. Cancellation is checked before every fold; the first
+/// failure or cancellation ends the loop, so a partial set can never be combined.
+pub(crate) fn collect_folds<T>(
+    count: usize,
+    is_cancelled: &dyn Fn() -> bool,
+    mut run_fold: impl FnMut(usize) -> Result<T, StageFailureKind>,
+) -> Result<Vec<T>, GradeFailure> {
+    let mut results = Vec::with_capacity(count);
+    for fold in 0..count {
+        if is_cancelled() {
+            return Err(GradeFailure::Cancelled);
+        }
+        results.push(run_fold(fold)?);
+    }
+    Ok(results)
 }
 
 fn validate_mask(
@@ -593,13 +662,51 @@ impl CascadeRunner for ModelRuntimeRunner<'_> {
         })
     }
 
+    fn grade_cancellable(
+        &mut self,
+        request: &AnalysisRequest,
+        masks: &[Stage2MaskResult],
+        is_cancelled: &dyn Fn() -> bool,
+    ) -> Result<Stage3GradeResult, GradeFailure> {
+        match self.paths.stage3_other_folds.len() {
+            0 => self.grade(request, masks).map_err(GradeFailure::Failed),
+            4 => {
+                let manifests: Vec<PathBuf> = std::iter::once(self.paths.stage3_fold0.clone())
+                    .chain(self.paths.stage3_other_folds.iter().cloned())
+                    .collect();
+                let results = collect_folds(manifests.len(), is_cancelled, |fold| {
+                    self.grade_fold(&manifests[fold], request, masks)
+                })?;
+                combine_five_folds(&results).map_err(|error| {
+                    GradeFailure::Failed(match classify_stage3(&error) {
+                        StageFailureKind::Internal => StageFailureKind::InvalidOutput,
+                        other => other,
+                    })
+                })
+            }
+            _ => Err(GradeFailure::Failed(StageFailureKind::ModelUnavailable)),
+        }
+    }
+
     fn grade(
         &mut self,
         request: &AnalysisRequest,
         masks: &[Stage2MaskResult],
     ) -> Result<Stage3GradeResult, StageFailureKind> {
         let manifest = self.paths.stage3_fold0.clone();
-        self.with_model(&manifest, |runtime, model_id| {
+        self.grade_fold(&manifest, request, masks)
+    }
+}
+
+impl ModelRuntimeRunner<'_> {
+    /// Load one fold, grade, and unload it again, so only one ~0.8 GB session is alive at a time.
+    fn grade_fold(
+        &mut self,
+        manifest: &Path,
+        request: &AnalysisRequest,
+        masks: &[Stage2MaskResult],
+    ) -> Result<Stage3GradeResult, StageFailureKind> {
+        self.with_model(manifest, |runtime, model_id| {
             runtime
                 .infer_stage3_fold(&Stage3Request {
                     examination_id: request.examination_id,
@@ -940,6 +1047,7 @@ mod tests {
             cws: p.clone(),
             vessel: p.clone(),
             stage3_fold0: p,
+            stage3_other_folds: Vec::new(),
         }
     }
 
@@ -1373,6 +1481,7 @@ mod tests {
             cws: missing.clone(),
             vessel: missing.clone(),
             stage3_fold0: missing,
+            stage3_other_folds: Vec::new(),
         };
         let service = ModelService::new();
         for id in [51, 52] {
@@ -1436,6 +1545,9 @@ mod tests {
             cws: env("RETINACARE_CASCADE_CWS_MANIFEST"),
             vessel: env("RETINACARE_CASCADE_VESSEL_MANIFEST"),
             stage3_fold0: env("RETINACARE_CASCADE_FOLD0_MANIFEST"),
+            stage3_other_folds: std::env::var_os("RETINACARE_CASCADE_OTHER_FOLD_MANIFESTS")
+                .map(|list| std::env::split_paths(&list).collect())
+                .unwrap_or_default(),
         };
         let parity_root = env("RETINACARE_CASCADE_PARITY_ROOT");
         let mut request = request(101);
@@ -1510,14 +1622,308 @@ mod tests {
                         "{name} mask differs from the upstream reference"
                     );
                 }
-                let grading = report.grading.as_ref().expect("fold 0 ran");
-                assert_eq!(
-                    grading.scope,
-                    Stage3Scope::SingleFoldTechnicalTest { fold: 0 }
-                );
+                let grading = report.grading.as_ref().expect("grading ran");
                 assert!(grading.research_only);
+                let other = std::env::var_os("RETINACARE_CASCADE_OTHER_FOLD_MANIFESTS");
+                if let Some(other) = other {
+                    // Five-fold run: the Rust result must equal the ensemble of the five PyTorch
+                    // reference logit vectors recorded in the fold manifests (demo image, technical only).
+                    assert_eq!(grading.scope, Stage3Scope::FiveFoldEnsemble);
+                    assert_eq!(
+                        grading.checkpoint_sha256,
+                        FOLD_CHECKPOINT_SHA256.map(String::from).to_vec()
+                    );
+                    let mut manifests = vec![env("RETINACARE_CASCADE_FOLD0_MANIFEST")];
+                    manifests.extend(std::env::split_paths(&other));
+                    let folds: Vec<(u8, [f32; 4])> = manifests
+                        .iter()
+                        .enumerate()
+                        .map(|(fold, path)| {
+                            let json: serde_json::Value =
+                                serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+                            let case = json["validation"]["pytorch_vs_onnxruntime_cpu"]["cases"]
+                                .as_array()
+                                .unwrap()
+                                .iter()
+                                .find(|c| c["input"].as_str().unwrap().starts_with("demo image"))
+                                .expect("demo-image PyTorch reference");
+                            let v: Vec<f32> = case["pytorch_logits"]
+                                .as_array()
+                                .unwrap()
+                                .iter()
+                                .map(|x| x.as_f64().unwrap() as f32)
+                                .collect();
+                            (fold as u8, [v[0], v[1], v[2], v[3]])
+                        })
+                        .collect();
+                    let expected =
+                        retinacare_ai_bridge::stage3_grading::grade_five_fold_ensemble(&folds)
+                            .unwrap();
+                    let worst = expected
+                        .mean_full
+                        .iter()
+                        .zip(&grading.full_probabilities)
+                        .map(|(a, b)| (a - b).abs())
+                        .fold(0.0f32, f32::max);
+                    eprintln!(
+                        "ENSEMBLE: rust_grade={} pytorch_ref_grade={} max_abs_mean_prob_diff={worst:.3e} mean_full={:?}",
+                        grading.grade, expected.grade, grading.full_probabilities
+                    );
+                    assert!(worst < 1e-3, "ensemble probabilities differ by {worst}");
+                    assert_eq!(grading.grade, expected.grade);
+                } else {
+                    assert_eq!(
+                        grading.scope,
+                        Stage3Scope::SingleFoldTechnicalTest { fold: 0 }
+                    );
+                }
             }
             other => panic!("unexpected terminal state {other:?}: {:?}", report.failure),
         }
+    }
+
+    /// Fake that runs five "folds" through the real `collect_folds` and `combine_five_folds`.
+    struct EnsembleFake {
+        inner: Fake,
+        folds: [[f32; 4]; 5],
+        fail_fold: Option<usize>,
+        cancel_after_fold: Option<(usize, Arc<AtomicBool>)>,
+        executed: Vec<usize>,
+    }
+
+    impl EnsembleFake {
+        fn new(folds: [[f32; 4]; 5]) -> Self {
+            Self {
+                inner: Fake::new(5.0, folds[0]),
+                folds,
+                fail_fold: None,
+                cancel_after_fold: None,
+                executed: Vec::new(),
+            }
+        }
+    }
+
+    impl CascadeRunner for EnsembleFake {
+        fn screening(
+            &mut self,
+            request: &AnalysisRequest,
+        ) -> Result<Stage1GateOutput, StageFailureKind> {
+            self.inner.screening(request)
+        }
+        fn segment(
+            &mut self,
+            request: &AnalysisRequest,
+            kind: Stage2ModelKind,
+        ) -> Result<Stage2MaskResult, StageFailureKind> {
+            self.inner.segment(request, kind)
+        }
+        fn grade(
+            &mut self,
+            _request: &AnalysisRequest,
+            _masks: &[Stage2MaskResult],
+        ) -> Result<Stage3GradeResult, StageFailureKind> {
+            unreachable!("the ensemble path uses grade_cancellable")
+        }
+        fn grade_cancellable(
+            &mut self,
+            request: &AnalysisRequest,
+            masks: &[Stage2MaskResult],
+            is_cancelled: &dyn Fn() -> bool,
+        ) -> Result<Stage3GradeResult, GradeFailure> {
+            assert_eq!(masks.len(), 5);
+            let folds = self.folds;
+            let fail_fold = self.fail_fold;
+            let cancel = self.cancel_after_fold.clone();
+            let executed = &mut self.executed;
+            let results = collect_folds(5, is_cancelled, |fold| {
+                executed.push(fold);
+                if fail_fold == Some(fold) {
+                    return Err(StageFailureKind::Inference);
+                }
+                let decoded = grade_single_fold(&folds[fold]).unwrap();
+                if let Some((after, flag)) = &cancel
+                    && *after == fold
+                {
+                    flag.store(true, Ordering::SeqCst);
+                }
+                Ok(Stage3GradeResult {
+                    examination_id: request.examination_id,
+                    source_image_sha256: SHA.into(),
+                    scope: Stage3Scope::SingleFoldTechnicalTest { fold: fold as u8 },
+                    model_version: "1.0.0".into(),
+                    checkpoint_sha256: vec![FOLD_CHECKPOINT_SHA256[fold].into()],
+                    model_sha256: vec![format!("{fold:064x}")],
+                    severity_logits: Some(decoded.severity_logits),
+                    gradability_logit: Some(decoded.gradability_logit),
+                    full_probabilities: decoded.full,
+                    ordinal_probabilities: [
+                        decoded.probabilities[0],
+                        decoded.probabilities[1],
+                        decoded.probabilities[2],
+                    ],
+                    gradable_probability: decoded.probabilities[3],
+                    corn_thresholds: CORN_THRESHOLDS,
+                    gradability_threshold: GRADABILITY_THRESHOLD,
+                    grade: decoded.grade,
+                    ungradable: decoded.grade == 5,
+                    provider: ActualProvider::Cpu,
+                    elapsed_microseconds: 10,
+                    research_only: true,
+                })
+            })?;
+            combine_five_folds(&results)
+                .map_err(|_| GradeFailure::Failed(StageFailureKind::InvalidOutput))
+        }
+    }
+
+    fn run_ensemble(
+        runner: &mut EnsembleFake,
+        id: RequestId,
+        cancelled: &dyn Fn() -> bool,
+    ) -> AnalysisReport {
+        let req = request(id);
+        let mut events = Vec::new();
+        let report = run_cascade(runner, &req, cancelled, &mut |e| events.push(e));
+        assert_well_formed(&events, id);
+        report
+    }
+
+    const FOLDS: [[f32; 4]; 5] = [
+        [1.0, 0.5, -1.0, 3.0],
+        [0.2, 1.5, -0.3, 2.0],
+        [-0.5, 0.1, 0.4, 4.0],
+        [2.0, -1.0, 0.0, 1.0],
+        [0.0, 0.0, 0.0, 0.5],
+    ];
+
+    #[test]
+    fn five_fold_cascade_reports_the_ensemble_scope_and_all_five_pinned_hashes() {
+        let mut runner = EnsembleFake::new(FOLDS);
+        let report = run_ensemble(&mut runner, 201, NEVER);
+        assert_eq!(
+            runner.executed,
+            vec![0, 1, 2, 3, 4],
+            "folds run one after another"
+        );
+        assert!(matches!(
+            report.state,
+            AnalysisState::Graded | AnalysisState::Ungradable
+        ));
+        let grading = report.grading.as_ref().unwrap();
+        assert_eq!(grading.scope, Stage3Scope::FiveFoldEnsemble);
+        assert_eq!(
+            grading.checkpoint_sha256,
+            FOLD_CHECKPOINT_SHA256.map(String::from).to_vec()
+        );
+        assert!(grading.research_only && report.research_only);
+        assert_eq!(
+            report
+                .timings
+                .iter()
+                .filter(|t| t.stage == AnalysisStage::Grading)
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn cancelling_between_folds_runs_no_later_fold_and_publishes_no_grade() {
+        let flag = Arc::new(AtomicBool::new(false));
+        let mut runner = EnsembleFake::new(FOLDS);
+        runner.cancel_after_fold = Some((2, flag.clone()));
+        let watch = flag.clone();
+        let report = run_ensemble(&mut runner, 202, &move || watch.load(Ordering::SeqCst));
+        assert_eq!(
+            runner.executed,
+            vec![0, 1, 2],
+            "fold 3 and 4 must never start"
+        );
+        assert_eq!(report.state, AnalysisState::Cancelled);
+        assert!(report.grading.is_none() && report.cascade_grade.is_none());
+        assert!(
+            report.evidence_is_diagnostic_only,
+            "masks stay diagnostic evidence only"
+        );
+    }
+
+    #[test]
+    fn a_failing_fold_fails_the_whole_run_and_never_yields_a_partial_ensemble() {
+        for fail in 0..5 {
+            let mut runner = EnsembleFake::new(FOLDS);
+            runner.fail_fold = Some(fail);
+            let report = run_ensemble(&mut runner, 210 + fail as u64, NEVER);
+            assert_eq!(report.state, AnalysisState::Failed, "fold {fail}");
+            assert!(report.grading.is_none() && report.cascade_grade.is_none());
+            assert_eq!(report.failure.unwrap().kind, StageFailureKind::Inference);
+            assert_eq!(
+                runner.executed.len(),
+                fail + 1,
+                "no fold after the failing one runs"
+            );
+        }
+    }
+
+    #[test]
+    fn collect_folds_stops_at_cancel_and_at_the_first_failure() {
+        let seen = std::cell::RefCell::new(Vec::new());
+        let ok = collect_folds(5, NEVER, |f| {
+            seen.borrow_mut().push(f);
+            Ok(f)
+        });
+        assert_eq!(ok.unwrap(), vec![0, 1, 2, 3, 4]);
+        let cancelled = collect_folds(5, &|| true, |_| -> Result<u8, StageFailureKind> {
+            panic!("must not run")
+        });
+        assert_eq!(cancelled.unwrap_err(), GradeFailure::Cancelled);
+        let failed = collect_folds(5, NEVER, |f| {
+            if f == 1 {
+                Err(StageFailureKind::ModelIntegrity)
+            } else {
+                Ok(f)
+            }
+        });
+        assert_eq!(
+            failed.unwrap_err(),
+            GradeFailure::Failed(StageFailureKind::ModelIntegrity)
+        );
+    }
+
+    fn paths_with(folds: usize) -> CascadeModelPaths {
+        let missing = PathBuf::from("/nonexistent/retinacare/manifest.json");
+        CascadeModelPaths {
+            stage1: missing.clone(),
+            ma: missing.clone(),
+            he: missing.clone(),
+            ex: missing.clone(),
+            cws: missing.clone(),
+            vessel: missing.clone(),
+            stage3_fold0: missing.clone(),
+            stage3_other_folds: vec![missing; folds],
+        }
+    }
+
+    #[test]
+    fn a_partial_fold_configuration_is_refused_before_any_model_is_touched() {
+        let masks: Vec<Stage2MaskResult> = Vec::new();
+        for folds in [1, 2, 3, 5] {
+            let paths = paths_with(folds);
+            let mut runtime = ModelRuntime::default();
+            let mut runner = ModelRuntimeRunner::new(&mut runtime, &paths);
+            let result = runner.grade_cancellable(&request(300), &masks, NEVER);
+            assert_eq!(
+                result.unwrap_err(),
+                GradeFailure::Failed(StageFailureKind::ModelUnavailable),
+                "{folds} extra folds"
+            );
+        }
+    }
+
+    #[test]
+    fn missing_fold_manifests_fail_as_one_error_and_never_produce_a_grade() {
+        let paths = paths_with(4);
+        let mut runtime = ModelRuntime::default();
+        let mut runner = ModelRuntimeRunner::new(&mut runtime, &paths);
+        let result = runner.grade_cancellable(&request(301), &[], NEVER);
+        assert!(matches!(result, Err(GradeFailure::Failed(_))));
     }
 }

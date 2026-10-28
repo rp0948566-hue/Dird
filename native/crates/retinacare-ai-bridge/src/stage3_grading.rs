@@ -30,6 +30,10 @@ pub enum Stage3GradingError {
     EmptyEnsemble,
     #[error("probability vector is not a valid distribution")]
     InvalidVector,
+    #[error("a five-fold ensemble needs exactly five folds")]
+    WrongFoldCount,
+    #[error("ensemble folds must be exactly folds 0, 1, 2, 3 and 4, each once")]
+    FoldSetMismatch,
 }
 
 fn sigmoid(value: f32) -> f32 {
@@ -224,6 +228,130 @@ pub fn grade_single_fold(logits: &[f32]) -> Result<SingleFoldGrade, Stage3Infere
     })
 }
 
+/// Full five-fold LG-DRG result: the mean of the five full vectors, decoded after averaging.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnsembleGrade {
+    /// Each fold's own decoded grade, kept as diagnostic evidence only (never a vote).
+    pub per_fold: [SingleFoldGrade; 5],
+    pub mean_full: FullVector,
+    /// `(p1, p2, p3, p_gradable)` recovered from the averaged vector.
+    pub probabilities: [f64; 4],
+    pub grade: u8,
+}
+
+/// Official ensemble: five distinct folds (0-4, each exactly once), average the 5-way probability
+/// vectors, then invert and decode the mean with the pinned thresholds. Any missing, duplicated,
+/// mislabelled or non-finite fold rejects the whole ensemble; there is no partial grade.
+pub fn grade_five_fold_ensemble(
+    folds: &[(u8, [f32; 4])],
+) -> Result<EnsembleGrade, Stage3InferenceError> {
+    if folds.len() != 5 {
+        return Err(Stage3GradingError::WrongFoldCount.into());
+    }
+    let mut seen = [false; 5];
+    for (fold, _) in folds {
+        match seen.get_mut(usize::from(*fold)) {
+            Some(slot) if !*slot => *slot = true,
+            _ => return Err(Stage3GradingError::FoldSetMismatch.into()),
+        }
+    }
+    let mut ordered: Vec<(u8, SingleFoldGrade)> = Vec::with_capacity(5);
+    for (fold, logits) in folds {
+        ordered.push((*fold, grade_single_fold(logits)?));
+    }
+    ordered.sort_by_key(|(fold, _)| *fold);
+    let vectors: Vec<FullVector> = ordered.iter().map(|(_, g)| g.full).collect();
+    let mean_full = ensemble_mean(&vectors)?;
+    let probabilities = corn_from_full(mean_full)?;
+    let grade = decode_consecutive(probabilities, CORN_THRESHOLDS, GRADABILITY_THRESHOLD);
+    let per_fold: [SingleFoldGrade; 5] = ordered
+        .into_iter()
+        .map(|(_, g)| g)
+        .collect::<Vec<_>>()
+        .try_into()
+        .map_err(|_| Stage3GradingError::WrongFoldCount)?;
+    Ok(EnsembleGrade {
+        per_fold,
+        mean_full,
+        probabilities,
+        grade,
+    })
+}
+
+/// Combine five single-fold results (folds 0-4, each once, same examination, image, provider and
+/// pinned checkpoint hashes) into the official full-ensemble result. Anything else is rejected:
+/// the caller must never present a partial or mixed-up ensemble as a five-fold grade.
+pub fn combine_five_folds(
+    results: &[Stage3GradeResult],
+) -> Result<Stage3GradeResult, Stage3InferenceError> {
+    let reject = |reason: &'static str| Stage3InferenceError::InvalidRequest(reason);
+    let first = results.first().ok_or(Stage3GradingError::WrongFoldCount)?;
+    let mut folds = Vec::with_capacity(5);
+    for result in results {
+        let Stage3Scope::SingleFoldTechnicalTest { fold } = result.scope else {
+            return Err(reject("ensemble input must be single-fold results"));
+        };
+        if result.examination_id != first.examination_id
+            || result.source_image_sha256 != first.source_image_sha256
+            || result.provider != first.provider
+            || !result.research_only
+        {
+            return Err(reject(
+                "fold results disagree on examination, image or provider",
+            ));
+        }
+        if result.checkpoint_sha256.len() != 1
+            || result.model_sha256.len() != 1
+            || FOLD_CHECKPOINT_SHA256
+                .get(usize::from(fold))
+                .is_none_or(|expected| result.checkpoint_sha256[0] != *expected)
+        {
+            return Err(reject(
+                "fold result does not carry its pinned checkpoint hash",
+            ));
+        }
+        let (Some(severity), Some(gradability)) =
+            (result.severity_logits, result.gradability_logit)
+        else {
+            return Err(reject("fold result is missing its raw logits"));
+        };
+        folds.push((fold, [severity[0], severity[1], severity[2], gradability]));
+    }
+    let ensemble = grade_five_fold_ensemble(&folds)?;
+    let mut ordered: Vec<&Stage3GradeResult> = results.iter().collect();
+    ordered.sort_by_key(|r| match r.scope {
+        Stage3Scope::SingleFoldTechnicalTest { fold } => fold,
+        Stage3Scope::FiveFoldEnsemble => u8::MAX,
+    });
+    Ok(Stage3GradeResult {
+        examination_id: first.examination_id,
+        source_image_sha256: first.source_image_sha256.clone(),
+        scope: Stage3Scope::FiveFoldEnsemble,
+        model_version: first.model_version.clone(),
+        checkpoint_sha256: ordered
+            .iter()
+            .map(|r| r.checkpoint_sha256[0].clone())
+            .collect(),
+        model_sha256: ordered.iter().map(|r| r.model_sha256[0].clone()).collect(),
+        severity_logits: None,
+        gradability_logit: None,
+        full_probabilities: ensemble.mean_full,
+        ordinal_probabilities: [
+            ensemble.probabilities[0],
+            ensemble.probabilities[1],
+            ensemble.probabilities[2],
+        ],
+        gradable_probability: ensemble.probabilities[3],
+        corn_thresholds: CORN_THRESHOLDS,
+        gradability_threshold: GRADABILITY_THRESHOLD,
+        grade: ensemble.grade,
+        ungradable: ensemble.grade == 5,
+        provider: first.provider,
+        elapsed_microseconds: results.iter().map(|r| r.elapsed_microseconds).sum(),
+        research_only: true,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -365,5 +493,206 @@ mod tests {
         // Ungradable overrides severity, and exactly tg is still gradable (strictly below).
         assert_eq!(decode_consecutive([0.9, 0.9, 0.9, 0.0999], t, 0.10), 5);
         assert_eq!(decode_consecutive([0.9, 0.9, 0.9, 0.10], t, 0.10), 4);
+    }
+
+    fn five(logits: [[f32; 4]; 5]) -> Vec<(u8, [f32; 4])> {
+        logits
+            .iter()
+            .enumerate()
+            .map(|(i, l)| (i as u8, *l))
+            .collect()
+    }
+
+    #[test]
+    fn ensemble_decodes_the_mean_of_probabilities_not_a_vote_or_a_logit_mean() {
+        // Four folds say severity 1, one fold is extremely severe: the decoded mean is what counts.
+        let mut logits = [[-6.0, -6.0, -6.0, 6.0]; 5];
+        logits[4] = [9.0, 9.0, 9.0, 6.0];
+        let result = grade_five_fold_ensemble(&five(logits)).unwrap();
+        let vectors: Vec<FullVector> = result.per_fold.iter().map(|g| g.full).collect();
+        assert_eq!(result.mean_full, ensemble_mean(&vectors).unwrap());
+        assert_eq!(result.grade, decode_full(result.mean_full).unwrap());
+        let votes: Vec<u8> = result.per_fold.iter().map(|g| g.grade).collect();
+        assert_eq!(
+            votes.iter().filter(|g| **g == 1).count(),
+            4,
+            "folds disagree on purpose"
+        );
+    }
+
+    #[test]
+    fn ensemble_is_independent_of_the_order_the_folds_arrive_in() {
+        let logits = [
+            [1.0, 0.5, -1.0, 3.0],
+            [0.2, 1.5, -0.3, 2.0],
+            [-0.5, 0.1, 0.4, 4.0],
+            [2.0, -1.0, 0.0, 1.0],
+            [0.0, 0.0, 0.0, 0.5],
+        ];
+        let forward = grade_five_fold_ensemble(&five(logits)).unwrap();
+        let mut shuffled = five(logits);
+        shuffled.reverse();
+        let reversed = grade_five_fold_ensemble(&shuffled).unwrap();
+        assert_eq!(forward.grade, reversed.grade);
+        assert_eq!(forward.mean_full, reversed.mean_full);
+    }
+
+    #[test]
+    fn partial_duplicated_or_mislabelled_ensembles_are_rejected() {
+        let good = [[1.0f32, 1.0, -1.0, 2.0]; 5];
+        let four = &five(good)[..4];
+        assert!(matches!(
+            grade_five_fold_ensemble(four),
+            Err(Stage3InferenceError::Grading(
+                Stage3GradingError::WrongFoldCount
+            ))
+        ));
+        let mut duplicate = five(good);
+        duplicate[2].0 = 1; // fold 1 used twice, fold 2 missing
+        assert!(matches!(
+            grade_five_fold_ensemble(&duplicate),
+            Err(Stage3InferenceError::Grading(
+                Stage3GradingError::FoldSetMismatch
+            ))
+        ));
+        let mut out_of_range = five(good);
+        out_of_range[4].0 = 7;
+        assert!(grade_five_fold_ensemble(&out_of_range).is_err());
+    }
+
+    #[test]
+    fn one_nonfinite_fold_rejects_the_whole_ensemble() {
+        for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            let mut logits = [[1.0f32, 1.0, -1.0, 2.0]; 5];
+            logits[3][1] = bad;
+            assert!(grade_five_fold_ensemble(&five(logits)).is_err());
+        }
+    }
+
+    #[test]
+    fn official_strict_comparisons_at_the_exact_thresholds() {
+        // p_gradable < 0.10 is ungradable; exactly 0.10 is gradable. p_k > t is strict.
+        assert_eq!(
+            decode_consecutive([0.9, 0.9, 0.9, 0.0999], CORN_THRESHOLDS, 0.10),
+            5
+        );
+        assert_eq!(
+            decode_consecutive([0.9, 0.9, 0.9, 0.10], CORN_THRESHOLDS, 0.10),
+            4
+        );
+        assert_eq!(
+            decode_consecutive([0.38, 0.9, 0.9, 1.0], CORN_THRESHOLDS, 0.10),
+            1
+        );
+        assert_eq!(
+            decode_consecutive([0.3801, 0.60, 0.9, 1.0], CORN_THRESHOLDS, 0.10),
+            2
+        );
+        assert_eq!(
+            decode_consecutive([0.9, 0.6001, 0.19, 1.0], CORN_THRESHOLDS, 0.10),
+            3
+        );
+        assert_eq!(
+            decode_consecutive([0.9, 0.9, 0.1901, 1.0], CORN_THRESHOLDS, 0.10),
+            4
+        );
+    }
+
+    #[test]
+    fn ungradable_ensemble_overrides_severity() {
+        let logits = [[9.0f32, 9.0, 9.0, -10.0]; 5];
+        assert_eq!(grade_five_fold_ensemble(&five(logits)).unwrap().grade, 5);
+    }
+
+    fn fold_result(fold: u8, logits: [f32; 4]) -> Stage3GradeResult {
+        let decoded = grade_single_fold(&logits).unwrap();
+        Stage3GradeResult {
+            examination_id: 7,
+            source_image_sha256: "a".repeat(64),
+            scope: Stage3Scope::SingleFoldTechnicalTest { fold },
+            model_version: "1.0.0".to_string(),
+            checkpoint_sha256: vec![FOLD_CHECKPOINT_SHA256[usize::from(fold)].to_string()],
+            model_sha256: vec![format!("{:064x}", fold)],
+            severity_logits: Some(decoded.severity_logits),
+            gradability_logit: Some(decoded.gradability_logit),
+            full_probabilities: decoded.full,
+            ordinal_probabilities: [
+                decoded.probabilities[0],
+                decoded.probabilities[1],
+                decoded.probabilities[2],
+            ],
+            gradable_probability: decoded.probabilities[3],
+            corn_thresholds: CORN_THRESHOLDS,
+            gradability_threshold: GRADABILITY_THRESHOLD,
+            grade: decoded.grade,
+            ungradable: decoded.grade == 5,
+            provider: ActualProvider::Cpu,
+            elapsed_microseconds: 1_000,
+            research_only: true,
+        }
+    }
+
+    fn five_results() -> Vec<Stage3GradeResult> {
+        let logits = [
+            [1.0, 0.5, -1.0, 3.0],
+            [0.2, 1.5, -0.3, 2.0],
+            [-0.5, 0.1, 0.4, 4.0],
+            [2.0, -1.0, 0.0, 1.0],
+            [0.0, 0.0, 0.0, 0.5],
+        ];
+        logits
+            .iter()
+            .enumerate()
+            .map(|(i, l)| fold_result(i as u8, *l))
+            .collect()
+    }
+
+    #[test]
+    fn combining_five_fold_results_matches_the_logit_level_ensemble_and_keeps_all_hashes() {
+        let results = five_results();
+        let combined = combine_five_folds(&results).unwrap();
+        let direct = grade_five_fold_ensemble(
+            &results
+                .iter()
+                .enumerate()
+                .map(|(i, r)| {
+                    let s = r.severity_logits.unwrap();
+                    (i as u8, [s[0], s[1], s[2], r.gradability_logit.unwrap()])
+                })
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
+        assert_eq!(combined.scope, Stage3Scope::FiveFoldEnsemble);
+        assert_eq!(combined.grade, direct.grade);
+        assert_eq!(combined.full_probabilities, direct.mean_full);
+        assert_eq!(
+            combined.checkpoint_sha256,
+            FOLD_CHECKPOINT_SHA256.map(str::to_string).to_vec()
+        );
+        assert_eq!(combined.model_sha256.len(), 5);
+        assert!(combined.research_only && combined.severity_logits.is_none());
+        assert_eq!(combined.elapsed_microseconds, 5_000);
+    }
+
+    #[test]
+    fn combining_rejects_a_substituted_checkpoint_missing_fold_or_mixed_exam() {
+        let mut wrong_hash = five_results();
+        wrong_hash[2].checkpoint_sha256 = wrong_hash[1].checkpoint_sha256.clone();
+        assert!(
+            combine_five_folds(&wrong_hash).is_err(),
+            "fold 1 file passed off as fold 2"
+        );
+        let mut four = five_results();
+        four.pop();
+        assert!(combine_five_folds(&four).is_err());
+        let mut mixed = five_results();
+        mixed[3].examination_id = 8;
+        assert!(combine_five_folds(&mixed).is_err());
+        let mut other_image = five_results();
+        other_image[4].source_image_sha256 = "b".repeat(64);
+        assert!(combine_five_folds(&other_image).is_err());
+        let mut already_ensemble = five_results();
+        already_ensemble[0].scope = Stage3Scope::FiveFoldEnsemble;
+        assert!(combine_five_folds(&already_ensemble).is_err());
     }
 }

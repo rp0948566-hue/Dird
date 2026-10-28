@@ -27,4 +27,6 @@ P2 mask persistence (2026-10-28): engineering COMPLETE and DESKTOP-VERIFIED on a
 
 Next: [[Handoffs/next-actions]].
 
+Phase 3 (2026-10-28): authentic FIVE-FOLD LG-DRG ensemble implemented and verified on CPU: all five checkpoints verified, ONNX and Rust parity per fold, ensemble equals the PyTorch reference, real cascade 54.9 s / 2.15 GiB, live GUI save, restart and restore on a synthetic exam. Research only. CUDA, Windows, labelled evaluation BLOCKED. Evidence: `docs/features/P3-five-fold-ensemble/README.md`, [[Models/stage-iii-grading]]. Uncommitted.
+
 Patients page redesign (2026-10-28): Directory restyled and verified in the live app; uncommitted in the GUI repo. See [[GUI/patient-examinations]].
