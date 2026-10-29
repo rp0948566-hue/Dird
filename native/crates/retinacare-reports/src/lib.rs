@@ -149,36 +149,42 @@ fn wrap(text: &str, columns: usize) -> Vec<String> {
 }
 
 /// Render the document to PDF bytes (PDF 1.4, A4, Helvetica / Helvetica-Bold).
-pub fn render_pdf(document: &PdfDocument) -> Result<Vec<u8>, ReportError> {
+/// One wrapped line of a laid-out page.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PageRow {
+    pub bold: bool,
+    pub size: f32,
+    pub text: String,
+}
+
+/// A page exactly as `render_pdf` lays it out, so a screen preview matches the file.
+pub enum PreviewPage<'a> {
+    Text(Vec<PageRow>),
+    Picture {
+        caption: Vec<PageRow>,
+        width: u32,
+        height: u32,
+        rgb: &'a [u8],
+    },
+}
+
+/// A4 size in points and text margin used by the layout.
+pub const PAGE_SIZE: (f32, f32) = (PAGE_WIDTH, PAGE_HEIGHT);
+pub const PAGE_MARGIN: f32 = MARGIN;
+pub const ROW_HEIGHT: f32 = LINE_HEIGHT;
+
+/// Lays the document out into pages: text pages first, then one page per picture.
+pub fn preview_pages(document: &PdfDocument) -> Result<Vec<PreviewPage<'_>>, ReportError> {
     if document.lines.is_empty() {
         return Err(ReportError::EmptyDocument);
     }
-    struct Row {
-        bold: bool,
-        size: f32,
-        text: String,
-    }
-    let mut rows = vec![Row {
-        bold: true,
-        size: 16.0,
-        text: sanitise(&document.title),
-    }];
-    rows.push(Row {
-        bold: false,
-        size: 10.0,
-        text: String::new(),
-    });
-    enum Page<'a> {
-        Text(&'a [Row]),
-        Picture {
-            caption: Vec<Row>,
-            width: u32,
-            height: u32,
-            rgb: &'a [u8],
-        },
-    }
+    let row = |bold, size, text| PageRow { bold, size, text };
+    let mut rows = vec![
+        row(true, 16.0, sanitise(&document.title)),
+        row(false, 10.0, String::new()),
+    ];
     let per_page = ((PAGE_HEIGHT - 2.0 * MARGIN) / LINE_HEIGHT) as usize;
-    let mut pictures: Vec<(Vec<Row>, u32, u32, &[u8])> = Vec::new();
+    let mut pictures = Vec::new();
     for line in &document.lines {
         if let PdfLine::Image {
             caption,
@@ -195,16 +201,12 @@ pub fn render_pdf(document: &PdfDocument) -> Result<Vec<u8>, ReportError> {
             {
                 return Err(ReportError::Invalid("embedded image has inconsistent size"));
             }
-            let caption_rows: Vec<Row> = wrap(&sanitise(caption), WRAP_COLUMNS)
+            let caption_rows: Vec<PageRow> = wrap(&sanitise(caption), WRAP_COLUMNS)
                 .into_iter()
-                .map(|text| Row {
-                    bold: false,
-                    size: 10.0,
-                    text,
-                })
+                .map(|text| row(false, 10.0, text))
                 .collect();
             // Pictures get their own pages after all text rows.
-            pictures.push((caption_rows, *width, *height, rgb));
+            pictures.push((caption_rows, *width, *height, rgb.as_slice()));
             continue;
         }
         let (bold, size, text, columns) = match line {
@@ -215,25 +217,30 @@ pub fn render_pdf(document: &PdfDocument) -> Result<Vec<u8>, ReportError> {
             PdfLine::Image { .. } => unreachable!(),
         };
         for piece in wrap(&sanitise(text), columns) {
-            rows.push(Row {
-                bold,
-                size,
-                text: piece,
-            });
+            rows.push(row(bold, size, piece));
         }
     }
-    let mut pages: Vec<Page> = rows.chunks(per_page).map(Page::Text).collect();
+    let mut pages: Vec<PreviewPage> = rows
+        .chunks(per_page)
+        .map(|c| PreviewPage::Text(c.to_vec()))
+        .collect();
     for (caption, width, height, rgb) in pictures {
-        pages.push(Page::Picture {
+        pages.push(PreviewPage::Picture {
             caption,
             width,
             height,
             rgb,
         });
     }
+    Ok(pages)
+}
+
+/// Render the document to PDF bytes (PDF 1.4, A4, Helvetica / Helvetica-Bold).
+pub fn render_pdf(document: &PdfDocument) -> Result<Vec<u8>, ReportError> {
+    let pages = preview_pages(document)?;
     let picture_count = pages
         .iter()
-        .filter(|p| matches!(p, Page::Picture { .. }))
+        .filter(|p| matches!(p, PreviewPage::Picture { .. }))
         .count();
 
     let mut objects: Vec<String> = Vec::new();
@@ -257,7 +264,7 @@ pub fn render_pdf(document: &PdfDocument) -> Result<Vec<u8>, ReportError> {
     // Image XObjects (ASCII-hex encoded so the whole file stays 7-bit and xref offsets stay exact).
     let mut image_ids: Vec<Option<usize>> = Vec::new();
     for page in &pages {
-        if let Page::Picture {
+        if let PreviewPage::Picture {
             width, height, rgb, ..
         } = page
         {
@@ -284,10 +291,10 @@ pub fn render_pdf(document: &PdfDocument) -> Result<Vec<u8>, ReportError> {
             "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {PAGE_WIDTH} {PAGE_HEIGHT}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>{xobject} >> /Contents {content_id} 0 R >>"
         ));
         let mut stream = String::new();
-        type Picture<'a> = Option<(&'a Vec<Row>, u32, u32)>;
-        let (rows_here, picture): (&[Row], Picture) = match page {
-            Page::Text(rows) => (rows, None),
-            Page::Picture {
+        type Picture<'a> = Option<(&'a Vec<PageRow>, u32, u32)>;
+        let (rows_here, picture): (&[PageRow], Picture) = match page {
+            PreviewPage::Text(rows) => (rows, None),
+            PreviewPage::Picture {
                 caption,
                 width,
                 height,

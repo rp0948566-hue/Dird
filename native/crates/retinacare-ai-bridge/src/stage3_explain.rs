@@ -543,11 +543,12 @@ pub fn explain_stage3_occlusion(
         if cancelled() {
             return Err(AttributionError::Cancelled);
         }
-        let (model_id, owned) = match runtime.load(manifest, ProviderRequest::Cpu) {
-            Ok(loaded) => (loaded.model_id, true),
-            Err(ModelRuntimeError::AlreadyLoaded(id)) => (id, false),
-            Err(error) => return Err(AttributionError::Scoring(error.to_string())),
-        };
+        let (model_id, owned) =
+            match runtime.load_unverified(manifest, ProviderRequest::Cpu, "explainability") {
+                Ok(loaded) => (loaded.model_id, true),
+                Err(ModelRuntimeError::AlreadyLoaded(id)) => (id, false),
+                Err(error) => return Err(AttributionError::Scoring(error.to_string())),
+            };
         let base = per_fold * index as u32;
         let outcome = runtime.explain_stage3_fold_occlusion(
             &model_id,

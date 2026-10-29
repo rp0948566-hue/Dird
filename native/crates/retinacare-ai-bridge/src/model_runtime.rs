@@ -106,6 +106,8 @@ pub enum ModelRuntimeError {
     AlreadyLoaded(String),
     #[error("model `{0}` is not loaded")]
     NotLoaded(String),
+    #[error("{0}")]
+    GpuNotVerified(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -120,6 +122,86 @@ pub struct LoadedModel {
     pub provider: crate::device::ActualProvider,
 }
 
+/// Tasks whose GPU output was compared with CPU on the installed models
+/// (`local_every_model_gpu_matches_cpu`). Anything not listed, including Stage III grading and
+/// explainability, stays on CPU in `auto` and is refused under strict `cuda`.
+pub const GPU_VERIFIED_TASKS: [&str; 6] = [
+    "dr_screening_gate",
+    "microaneurysm_segmentation",
+    "hemorrhage_segmentation",
+    "hard_exudate_segmentation",
+    "cotton_wool_spot_segmentation",
+    "vessel_segmentation",
+];
+
+/// What to do with a load request that asked for CPU.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Resolution {
+    Cpu,
+    GpuOrCpu,
+    GpuOnly,
+    Refuse(String),
+}
+
+/// Pure decision: `verified` is whether this operation's GPU output has been checked against CPU.
+fn resolve(policy: crate::device::GpuPolicy, verified: bool, what: &str) -> Resolution {
+    use crate::device::GpuPolicy;
+    match (policy, verified) {
+        (GpuPolicy::Cpu, _) | (GpuPolicy::Auto, false) => Resolution::Cpu,
+        (GpuPolicy::Auto, true) => Resolution::GpuOrCpu,
+        (GpuPolicy::Cuda, true) => Resolution::GpuOnly,
+        (GpuPolicy::Cuda, false) => Resolution::Refuse(format!(
+            "{what} is not GPU-verified yet; strict CUDA refuses it (use RETINACARE_PROVIDER=auto or cpu)"
+        )),
+    }
+}
+
+fn manifest_task(manifest_path: &Path) -> Option<String> {
+    let text = std::fs::read_to_string(manifest_path).ok()?;
+    let value: serde_json::Value = serde_json::from_str(&text).ok()?;
+    value.get("task")?.as_str().map(str::to_owned)
+}
+
+/// The one place a CPU request becomes a GPU request. An explicit CUDA request is never changed.
+/// `pinned` names an operation that is never GPU-verified (explainability). With `auto`, a GPU
+/// that cannot be used falls back to CPU and the loaded model reports the device it really runs
+/// on; with `cuda` the failure is returned.
+fn open_resolved(
+    manifest_path: &Path,
+    requested: ProviderRequest,
+    pinned: Option<&str>,
+) -> Result<VerifiedSession, ModelRuntimeError> {
+    use crate::device::gpu_policy;
+    if requested != ProviderRequest::Cpu {
+        return Ok(VerifiedSession::open_with_provider(
+            manifest_path,
+            requested,
+        )?);
+    }
+    let task = manifest_task(manifest_path);
+    let verified = pinned.is_none()
+        && task
+            .as_deref()
+            .is_some_and(|t| GPU_VERIFIED_TASKS.contains(&t));
+    let what = pinned
+        .map(str::to_owned)
+        .unwrap_or_else(|| task.unwrap_or_else(|| manifest_path.display().to_string()));
+    let gpu = ProviderRequest::Cuda { device_id: 0 };
+    match resolve(gpu_policy(), verified, &what) {
+        Resolution::Cpu => Ok(VerifiedSession::open_with_provider(
+            manifest_path,
+            ProviderRequest::Cpu,
+        )?),
+        Resolution::GpuOnly => Ok(VerifiedSession::open_with_provider(manifest_path, gpu)?),
+        Resolution::GpuOrCpu => Ok(VerifiedSession::open_with_provider(manifest_path, gpu)
+            .or_else(|reason| {
+                eprintln!("GPU unavailable for {what}: {reason}; using CPU");
+                VerifiedSession::open_with_provider(manifest_path, ProviderRequest::Cpu)
+            })?),
+        Resolution::Refuse(message) => Err(ModelRuntimeError::GpuNotVerified(message)),
+    }
+}
+
 #[derive(Default)]
 pub struct ModelRuntime {
     sessions: HashMap<String, VerifiedSession>,
@@ -131,7 +213,26 @@ impl ModelRuntime {
         manifest_path: &Path,
         provider: ProviderRequest,
     ) -> Result<LoadedModel, ModelRuntimeError> {
-        let session = VerifiedSession::open_with_provider(manifest_path, provider)?;
+        self.load_inner(manifest_path, provider, None)
+    }
+
+    /// Load for an operation whose GPU output is not verified (explainability): CPU in `auto`.
+    pub fn load_unverified(
+        &mut self,
+        manifest_path: &Path,
+        provider: ProviderRequest,
+        operation: &str,
+    ) -> Result<LoadedModel, ModelRuntimeError> {
+        self.load_inner(manifest_path, provider, Some(operation))
+    }
+
+    fn load_inner(
+        &mut self,
+        manifest_path: &Path,
+        provider: ProviderRequest,
+        pinned: Option<&str>,
+    ) -> Result<LoadedModel, ModelRuntimeError> {
+        let session = open_resolved(manifest_path, provider, pinned)?;
         let model_id = session.model().model_id.clone();
         if self.sessions.contains_key(&model_id) {
             return Err(ModelRuntimeError::AlreadyLoaded(model_id));
@@ -986,5 +1087,140 @@ mod tests {
             assert_eq!(run.gate.decision, cpu_out.gate.decision);
             assert_eq!(run.provider, ActualProvider::Cuda { device_id: 0 });
         }
+    }
+
+    /// Every installed model, CPU against GPU on one deterministic input. Prints one line per model.
+    #[test]
+    #[ignore = "local-only: needs an NVIDIA GPU, CUDA 13 + cuDNN 9 on LD_LIBRARY_PATH and RETINACARE_MODELS_DIR"]
+    fn local_every_model_gpu_matches_cpu() {
+        let root = std::path::PathBuf::from(
+            std::env::var_os("RETINACARE_MODELS_DIR").expect("set RETINACARE_MODELS_DIR"),
+        );
+        let mut manifests = Vec::new();
+        let mut stack = vec![root];
+        while let Some(dir) = stack.pop() {
+            for entry in std::fs::read_dir(dir).unwrap().flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    stack.push(path);
+                } else if path.file_name().is_some_and(|n| n == "manifest.json") {
+                    manifests.push(path);
+                }
+            }
+        }
+        manifests.sort();
+        assert!(
+            !manifests.is_empty(),
+            "no manifest.json under RETINACARE_MODELS_DIR"
+        );
+        let mut failed = Vec::new();
+        for manifest in manifests {
+            let mut cpu =
+                VerifiedSession::open_with_provider(&manifest, ProviderRequest::Cpu).unwrap();
+            let n: usize = cpu.model().input_shape.iter().product();
+            let mut state = 12345u32;
+            let input: Vec<f32> = (0..n)
+                .map(|_| {
+                    state = state.wrapping_mul(1664525).wrapping_add(1013904223);
+                    (state >> 8) as f32 / (1u32 << 24) as f32 * 2.0 - 1.0
+                })
+                .collect();
+            let t = Instant::now();
+            let want = cpu.run(&input).unwrap();
+            let cpu_ms = t.elapsed().as_millis();
+            drop(cpu);
+            let mut gpu = match VerifiedSession::open_with_provider(
+                &manifest,
+                ProviderRequest::Cuda { device_id: 0 },
+            ) {
+                Ok(s) => s,
+                Err(e) => {
+                    println!("PARITY {} gpu_open_failed: {e}", manifest.display());
+                    failed.push(manifest.display().to_string());
+                    continue;
+                }
+            };
+            gpu.run(&input).unwrap(); // warm-up
+            let t = Instant::now();
+            let got = gpu.run(&input).unwrap();
+            let gpu_ms = t.elapsed().as_millis();
+            let max_abs = want
+                .iter()
+                .zip(&got)
+                .map(|(a, b)| (a - b).abs())
+                .fold(0.0f32, f32::max);
+            let scale = want.iter().fold(0.0f32, |m, v| m.max(v.abs())).max(1e-6);
+            println!(
+                "PARITY {} len={} max_abs={max_abs:.5} rel={:.5} cpu_ms={cpu_ms} gpu_ms={gpu_ms}",
+                manifest.display(),
+                want.len(),
+                max_abs / scale
+            );
+            if want.len() != got.len() || max_abs / scale > 0.02 {
+                failed.push(manifest.display().to_string());
+            }
+        }
+        assert!(failed.is_empty(), "GPU does not match CPU for: {failed:?}");
+    }
+
+    #[test]
+    fn auto_moves_only_verified_work_to_the_gpu() {
+        use crate::device::GpuPolicy::{Auto, Cpu, Cuda};
+        assert_eq!(resolve(Cpu, true, "x"), Resolution::Cpu);
+        assert_eq!(resolve(Auto, true, "x"), Resolution::GpuOrCpu);
+        assert_eq!(resolve(Auto, false, "x"), Resolution::Cpu);
+        assert_eq!(resolve(Cuda, true, "x"), Resolution::GpuOnly);
+        assert!(
+            matches!(resolve(Cuda, false, "explainability"), Resolution::Refuse(m) if m.contains("explainability"))
+        );
+    }
+
+    #[test]
+    fn stage_three_and_unknown_tasks_are_not_gpu_verified() {
+        assert!(!GPU_VERIFIED_TASKS.contains(&"lg_drg_grading"));
+        assert!(GPU_VERIFIED_TASKS.contains(&"dr_screening_gate"));
+        assert_eq!(manifest_task(Path::new("/nonexistent/manifest.json")), None);
+    }
+
+    /// Which device each kind of load really gets under the current `RETINACARE_PROVIDER`.
+    /// Expected values: RETINACARE_EXPECT_STAGE1 / _STAGE3 / _EXPLAIN = cpu | cuda | error.
+    #[test]
+    #[ignore = "local-only: needs models; set RETINACARE_STAGE1_MANIFEST, RETINACARE_STAGE3_MANIFEST and the RETINACARE_EXPECT_* values"]
+    fn local_provider_modes_report_the_real_device() {
+        use crate::device::ActualProvider;
+        let show = |r: &Result<LoadedModel, ModelRuntimeError>| match r {
+            Ok(m) if m.provider == ActualProvider::Cpu => "cpu".to_string(),
+            Ok(_) => "cuda".to_string(),
+            Err(_) => "error".to_string(),
+        };
+        let path = |k: &str| {
+            std::path::PathBuf::from(std::env::var_os(k).unwrap_or_else(|| panic!("set {k}")))
+        };
+        let (s1, s3) = (
+            path("RETINACARE_STAGE1_MANIFEST"),
+            path("RETINACARE_STAGE3_MANIFEST"),
+        );
+        let mut rt = ModelRuntime::default();
+        let stage1 = rt.load(&s1, ProviderRequest::Cpu);
+        let stage3 = rt.load(&s3, ProviderRequest::Cpu);
+        let explain = rt.load_unverified(&s3, ProviderRequest::Cpu, "explainability");
+        let got = (show(&stage1), show(&stage3), show(&explain));
+        println!(
+            "MODES policy={:?} stage1={} stage3={} explain={} err={:?}",
+            crate::device::gpu_policy(),
+            got.0,
+            got.1,
+            got.2,
+            stage3.as_ref().err().map(|e| e.to_string())
+        );
+        let want = |k: &str| std::env::var(k).unwrap_or_else(|_| panic!("set {k}"));
+        // The explain load runs after stage3 is already loaded, so AlreadyLoaded shows as error
+        // when stage3 loaded: unload first for a clean answer.
+        drop(rt);
+        let mut rt = ModelRuntime::default();
+        let explain = show(&rt.load_unverified(&s3, ProviderRequest::Cpu, "explainability"));
+        assert_eq!(got.0, want("RETINACARE_EXPECT_STAGE1"));
+        assert_eq!(got.1, want("RETINACARE_EXPECT_STAGE3"));
+        assert_eq!(explain, want("RETINACARE_EXPECT_EXPLAIN"));
     }
 }

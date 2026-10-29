@@ -767,9 +767,9 @@ fn classify_session(error: &SessionError) -> StageFailureKind {
 fn classify_runtime(error: &ModelRuntimeError) -> StageFailureKind {
     match error {
         ModelRuntimeError::Session(session) => classify_session(session),
-        ModelRuntimeError::AlreadyLoaded(_) | ModelRuntimeError::NotLoaded(_) => {
-            StageFailureKind::ModelUnavailable
-        }
+        ModelRuntimeError::AlreadyLoaded(_)
+        | ModelRuntimeError::NotLoaded(_)
+        | ModelRuntimeError::GpuNotVerified(_) => StageFailureKind::ModelUnavailable,
     }
 }
 

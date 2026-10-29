@@ -25,6 +25,26 @@ pub struct ProviderCapabilities {
     pub cuda_execution_provider: bool,
 }
 
+/// What to do with a model-load request that asks for CPU (`RETINACARE_PROVIDER`).
+/// `cpu` keeps it there, `cuda` moves it to GPU 0 and fails loudly, `auto` tries GPU 0 and
+/// falls back to CPU. Unset means `auto` in a CUDA build and `cpu` otherwise.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GpuPolicy {
+    Cpu,
+    Auto,
+    Cuda,
+}
+
+pub fn gpu_policy() -> GpuPolicy {
+    match std::env::var("RETINACARE_PROVIDER").as_deref() {
+        Ok("cpu") => GpuPolicy::Cpu,
+        Ok("cuda") => GpuPolicy::Cuda,
+        Ok("auto") => GpuPolicy::Auto,
+        _ if cfg!(feature = "cuda") => GpuPolicy::Auto,
+        _ => GpuPolicy::Cpu,
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum DeviceError {
     #[error("ONNX Runtime CUDA capability probe failed: {0}")]
