@@ -24,3 +24,5 @@ Do not: remove `retinacare-ui`, touch the legacy React/Tauri app, add a second G
 
 - Chat: run 1600x900 check, oversized/encrypted PDF test, persist source chips, fix retry history, then decide READY. See [[GUI/medical-research-chat]].
 - Git: decide push branch (`GUI/Hackthon dezine/CLAUDE.md` says only `dezine`; recent pushes went to `test`).
+- Decide: auto-save a scratch analysis into a patient exam so Explainability, Lesion and Vessel pages fill. Check the report "Image:" line and PDF with a long name.
+- Git: main now holds GUI under `GUI/Hackthon dezine/`; `dezine` branch-policy conflict in the GUI `CLAUDE.md` is still open.

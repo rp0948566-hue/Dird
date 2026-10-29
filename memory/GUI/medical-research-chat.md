@@ -31,3 +31,4 @@ Verdict: demo-usable research prototype, NOT declared READY.
 - Checks on replies: `ungrounded_numbers`, `health_overclaim`, fixed text-only reply when asked "did you look at my image".
 - Known: 3B model still can say odd things (Hinglish quality, loose general knowledge); notes only catch invented numbers, health overclaims, bad citations.
 - GUI verified: 1280x820 dark+light, 1600x900 dark+light; fmt, clippy -D warnings, 251 tests, native workspace tests pass.
+- Results message: after analysis the chat shows `results_message` (fixed list), the 3B model only answers follow-up questions.

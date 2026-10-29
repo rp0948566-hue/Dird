@@ -237,3 +237,9 @@ were changed. The two repositories' prior uncommitted work remains intact.
 
 ## 2026-10-29 medical research chat
 Changed (GUI `rust/src`): `engine/papers.rs` (new), `engine/ollama.rs`, `engine/mod.rs`, `domain.rs`, `chat_app.rs`, `main.rs`; skill dir `.claude/skills/retinacare-medical-research/`. Tests: fmt+clippy clean, 248 pass/6 ignored (live Ollama). Open: 1600x900, oversized/encrypted PDF, chip persistence, retry history, branch policy (`dezine` vs `test`). Note: [[GUI/medical-research-chat]].
+
+## 2026-10-30 analysis results list, long file names, push to main
+- Post-analysis chat reply is now a fixed headed bullet list (`chat_app::results_message`), not model prose. Stage I/II/III, run time, research-only line.
+- Long attachment names cut to 40 chars (`explain::ellipsize`) in chip, card, bubble. File on disk keeps its name.
+- Explainability empty = scratch run not saved to a patient exam. Not a bug. Auto-save to a patient is NOT built (needs a decision).
+- Pushed to `main`: GUI repo AI-Manthan-2.0 (`GUI/Hackthon dezine/` in main layout) and Dird root `memory/`. Tests 251 pass/6 ignored.
