@@ -12,3 +12,4 @@ Run native checks with `cargo test --workspace --manifest-path native/Cargo.toml
 Run worker checks with `python -m unittest discover -s ai_engine/tests`.
 Protect patient data, model weights, datasets, and secrets from Git.
 Load `docs/index.md` for the document map; read memory index before other vault notes.
+Token Optimizer plugin is on (global); run `/token-optimizer` at long-task starts and after compaction. Auto-compact window is 400K.

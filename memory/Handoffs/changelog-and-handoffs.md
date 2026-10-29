@@ -220,3 +220,17 @@ were changed. The two repositories' prior uncommitted work remains intact.
 - Built and run on desktop: Mode R Home with live cards, Lesion/Vessel/Research Findings pages, Stage I and five-fold Grad-CAM, encrypted chats v5, PDF evidence grid, stable DB location.
 - Blocked: Mode C (no `llama-server`), live Supabase two-user test, mask ablation, Windows.
 - Evidence: `docs/features/P5-product-completion/` (README, plan, 27 screenshots). Ledger: [[Handoffs/p5-progress]].
+
+## 2026-10-29: GPU provider switch (committed and pushed, no force, nothing on main)
+- Dird `test-gpu` `7c7144c`: `ai-bridge/{device,model_runtime,stage3_explain}.rs`, `app/cascade.rs` (`GpuNotVerified` -> `ModelUnavailable`), `reports/lib.rs` (`preview_pages`, needed by the GUI build).
+- GUI repo `test` `5ce9ac9` (was `7f94938`): `rust/Cargo.toml` (bridge `features=["cuda"]`), `engine/backend.rs` (real provider labels), `main.rs` (sidebar status from readiness), `chat_app.rs` (image prompt -> analysis, text -> assistant), `ui/explain.rs` (`ellipsize`), `ui/patients.rs` (clipped labels, themed chips).
+- Verified: fmt and clippy clean (native workspace, bridge `--features cuda`, GUI); native tests bridge 109/15 ignored, app 25/8, domain 2, persistence 34, reports 4, 0 failed; GUI 241 passed/3 ignored/0 failed; parity + provider matrix in [[Testing/cuda-and-packaging]].
+- Not committed on purpose: `CLAUDE.md`, `memory/GUI/figma-design-system.md`, Figma-brief PDFs, CUDA libs, models, DB.
+- Not checked: visual pass of Patients profile, Explainability header, Vessel panel fixes.
+
+## 2026-10-29 (later): final demo verification and fixes
+- Ran the real release GUI on Xvfb (`RETINACARE_UI=v2`): real image upload, Stage I (neg 0.0650 / pos 0.9983), Stage II five masks on CUDA, Stage III grade 3 on CPU, saved-exam re-run, 3-page report, real PDF (pdfinfo/pdftotext), five-fold Grad-CAM (110.7 s, pytorch-cpu, stored), chat via Ollama, Previous Chats persistence, Patients/Timeline in light and dark, 1600x900 and 1280x820.
+- Fixes: hardcoded "on the CPU" text now lists real devices; Ollama 500 body shown and wrapped in the error banner; double-click on a Patients row no longer opens the legacy profile; sidebar Patients always lands on the directory; Previous Chats colours theme-aware (light mode readable); long image filename ellipsized in Retinal Review.
+- Files (GUI repo): `rust/src/{chat_app,main}.rs`, `engine/ollama.rs`, `ui/{explain,history}.rs`, `ui2/{patients_page,review_page}.rs`.
+- Tests: GUI 241 passed/3 ignored; native fmt+clippy clean, bridge 109/15 ignored, app 25/8, domain 2, persistence 34, reports 4; parity and provider matrix pass.
+- Ollama: system install broken (`llama-server` missing, needs sudo). Official v0.40.13 extracted to `/home/claude/ollama-user` (outside git); run it on port 11435 and start the GUI with `RETINACARE_OLLAMA_URL=http://127.0.0.1:11435`.

@@ -2,7 +2,7 @@
 title: RetinaCare canonical vault index
 type: index
 status: VERIFIED
-verified_on: 2026-10-28
+verified_on: 2026-10-29
 ---
 # RetinaCare vault index (canonical: `Dird/memory`)
 

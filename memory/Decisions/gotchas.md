@@ -45,3 +45,15 @@ See [[Testing/build-and-test]], [[Testing/cuda-and-packaging]], [[Integration/gu
 - Under Xvfb: `env -u WAYLAND_DISPLAY WINIT_UNIX_BACKEND=x11`, give the window X focus before typing, wheel over an image zooms it.
 - The GUI decodes a metadata-scrubbed copy for display but the backend hashes/decodes the original file: an EXIF-rotated JPEG can fail the frame-size identity check (safe failure).
 - `cargo fmt --all` formats the whole GUI crate (Antigravity's files included).
+
+## Added 2026-10-29 (GPU)
+- New models get no GPU until added to `GPU_VERIFIED_TASKS` after a CPU/GPU parity test. Strict `RETINACARE_PROVIDER=cuda` refuses unverified tasks by design.
+- CUDA libs must be on `LD_LIBRARY_PATH`; missing libs in auto = CPU plus a `GPU unavailable for ...` log line, not an error.
+- `pkill -f retinacare` killed the shell once; use `kill $(pgrep -x retinacare)`.
+- `git push` only to `test` / `test-gpu`; project CLAUDE.md rule says `dezine`, user authorized these branches explicitly.
+
+## Added 2026-10-29 (demo run)
+- Screenshot automation: GUI must run under Xvfb (`env -u WAYLAND_DISPLAY WINIT_UNIX_BACKEND=x11`), focus the window with XSetInputFocus, XTest clicks need a motion event before the press. Real-desktop XTest clicks can miss when another window covers the app.
+- File dialogs go through xdg-desktop-portal on the real desktop, not Xvfb: use `RETINACARE_AUTOPICK_IMAGE=<path>` for attach and `RETINACARE_PDF_DEST=<file>` for PDF export. `RETINACARE_THEME=light` starts light.
+- `pkill -f "^./target/release/retinacare"` also kills the user's own desktop instance: relaunch it afterwards.
+- Chat needs a working Ollama: without `llama-server` Ollama answers HTTP 500 with the reason in the body; the GUI now shows it.

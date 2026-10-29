@@ -48,3 +48,8 @@ Gate: user approval before any Rust work. Related: [[GUI/gui-active-phase]].
 - Not done yet: Geist/Instrument Serif fonts, light-mode pass over old pages, new Retinal Review and Clinical Assessment pages, composer with attachments, chat bubbles with Show more and charts, report pages with doctor notes, 85 % dialogs, per-page reskin.
 - Finding: light-mode white text on teal accent is 4.05:1 (AA wants 4.5 for small text); darken light accent to K50 if revised.
 - Gates: 235 tests pass (10 new), clippy and fmt clean, release build ok. Evidence: `GUI/Hackthon dezine/docs/features/UI-V2/chrome-dark-1280x820.png`.
+
+## Figma export to HTML (2026-10-29)
+- New folder `GUI/figma-export/` (outside the old GUI project, nothing in it touched). Standalone HTML+CSS exported from Figma by a custom exporter run through `use_figma` (deduped classes, shared sidebar, icon sprite, tokens.css with both themes). Serve with `python3 -m http.server 8765` there.
+- Exported so far: home, home-analysis, retinal-review, clinical-assessment (checked in browser, dark and light). Remaining pages listed in its README.
+- Costs: official `get_design_context` is about 12k tokens per screen; the custom exporter is about 3x cheaper but each call returns at most 48 KB.
