@@ -1,0 +1,32 @@
+{
+  "severity:3 (reference)": {
+    "score": 0.9251655340194702,
+    "signed_map_corr_vs_severity3": 1.0,
+    "relu_max": 0.007220529951155186,
+    "layer": "norm(gate(backbone_last_stage, lesion_encoder))"
+  },
+  "severity:2": {
+    "score": 0.07478372752666473,
+    "signed_map_corr_vs_severity3": -0.9999993590208303,
+    "relu_max": 0.0043634166941046715,
+    "layer": "norm(gate(backbone_last_stage, lesion_encoder))"
+  },
+  "gradability": {
+    "score": 0.9999958276748657,
+    "signed_map_corr_vs_severity3": 0.5266447745324175,
+    "relu_max": 1.118456225412956e-06,
+    "layer": "norm(gate(backbone_last_stage, lesion_encoder))"
+  },
+  "severity:3 randomized heads": {
+    "score": 0.06530433148145676,
+    "signed_map_corr_vs_severity3": -0.13304319069760318,
+    "relu_max": 0.00017574316007085145,
+    "layer": "norm(gate(backbone_last_stage, lesion_encoder))"
+  },
+  "severity:3 randomized backbone": {
+    "score": 0.08840407431125641,
+    "signed_map_corr_vs_severity3": 0.10247505734796425,
+    "relu_max": 0.0003138188039883971,
+    "layer": "norm(gate(backbone_last_stage, lesion_encoder))"
+  }
+}

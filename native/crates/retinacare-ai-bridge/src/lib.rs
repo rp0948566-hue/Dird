@@ -1,4 +1,5 @@
 //! Bounded, versioned local IPC. Cancellation terminates an unresponsive worker.
+pub mod attribution;
 pub mod device;
 pub mod model_manifest;
 pub mod model_registry;
@@ -9,6 +10,7 @@ pub mod stage1;
 pub mod stage2_contract;
 pub mod stage2_preprocessing;
 pub mod stage2_vessel;
+pub mod stage3_explain;
 pub mod stage3_grading;
 pub mod stage3_input;
 

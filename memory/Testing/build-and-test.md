@@ -61,3 +61,7 @@ Backend `cargo test --workspace` 120 passed, 0 failed, 18 ignored. GUI `cargo te
 
 ## 2026-10-28 - Phase 3 gates
 Backend 134 passed / 0 failed / 18 ignored; GUI 172 / 0 / 2. Heavy: per-fold Rust parity (folds 0-4), five-fold cascade (54.9 s, 2.15 GiB), GUI-adapter cascade (55.4 s). fmt, check, clippy -D warnings, release builds pass. Details: `docs/features/P3-five-fold-ensemble/README.md`.
+
+## Phase 4 run 2026-10-28
+Backend `cargo test --workspace`: 157 passed, 0 failed, 21 ignored; GUI: 188 passed, 0 failed, 2 ignored; fmt, `clippy -D warnings`, release builds, `git diff --check` pass in both repos. Heavy, run individually (env `RETINACARE_CASCADE_*`, `RETINACARE_EXPLAIN_MASKS`, `RETINACARE_REPO`): `local_real_model_occlusion_and_deletion` (fold 0; five-fold with `RETINACARE_CASCADE_OTHER_FOLD_MANIFESTS`), `local_deletion_insertion_faithfulness`, `local_gradcam_score_matches_onnx`, full cascade `local_full_cascade_technical_trace_matches_references`. Desktop: Xvfb session as above; scroll helper for page sections; Ctrl+wheel zooms the explanation frames. See [[Models/explainability]].
+

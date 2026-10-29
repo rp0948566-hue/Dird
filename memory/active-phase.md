@@ -16,7 +16,7 @@ Measured (CPU, release GUI, OD-1.png 640x640): 67-74 s end to end, peak RSS 2.95
 - Masks ARE stored and restored (P2, 2026-10-28): verified in the real desktop app on a synthetic exam. Labelled Dice/IoU BLOCKED. See [[Backend/mask-storage]].
 - Previous Chats: no LLM backend, no storage (ephemeral notice, no seeded chats outside dev/tests).
 - Negative route and ungradable: verified with scripted events and backend tests, not with a real image (none available).
-- CUDA, Windows, licensed-image acceptance, folds 1-4/ensemble, explainability (Phase 4): not done.
+- CUDA, Windows, licensed-image acceptance: not done. Folds 1-4/ensemble: done in Phase 3. Explainability: Phase 4 (see below).
 - Plain-JSON session export screen shows its warning; its write path was not exercised in the final desktop session.
 - Git: parent `main` `01f4cb7` (4 ahead of `Debaq/Dird`, push 403); GUI `dezine` `4814064` pushed. `AI-Manthan-2.0` `main` = `0997866` (backend + GUI combined), `backend-rust` = `01f4cb7`. Vault edits made after 2026-10-28 sync (README, `.obsidian`, state note) are uncommitted. Full table: [[Integration/project-state-sync-2026-10-28]].
 - Tests (after P2, run now): backend 120 passed/0 failed/18 ignored; GUI 170 passed/0 failed/2 ignored; heavy real 7-model GUI run passed with a real five-mask save/reload; fmt, clippy -D warnings, release builds clean.
@@ -30,3 +30,5 @@ Next: [[Handoffs/next-actions]].
 Phase 3 (2026-10-28): authentic FIVE-FOLD LG-DRG ensemble implemented and verified on CPU: all five checkpoints verified, ONNX and Rust parity per fold, ensemble equals the PyTorch reference, real cascade 54.9 s / 2.15 GiB, live GUI save, restart and restore on a synthetic exam. Research only. CUDA, Windows, labelled evaluation BLOCKED. Evidence: `docs/features/P3-five-fold-ensemble/README.md`, [[Models/stage-iii-grading]]. Uncommitted.
 
 Patients page redesign (2026-10-28): Directory restyled and verified in the live app; uncommitted in the GUI repo. See [[GUI/patient-examinations]].
+
+Phase 4 (2026-10-28): authentic explainability implemented and verified on CPU: real occlusion (one fold and the five-fold mean target, 325 forwards, 322 s in the GUI), real Grad-CAM for one fold, raw maps in the encrypted DB (schema v4), restore after restart, PDF section with the real overlay, sidebar Explainability page, Quad fourth panel. Stage I explanation, five-fold Grad-CAM, CUDA, Windows, labelled evaluation NOT done. Evidence: `docs/features/P4-explainability/README.md`, [[Models/explainability]]. Uncommitted.

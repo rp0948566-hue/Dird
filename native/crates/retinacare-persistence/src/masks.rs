@@ -807,7 +807,7 @@ mod tests {
             .unwrap();
         drop(store);
         let store = SqlCipherStore::open(&path, "pw").unwrap();
-        assert_eq!(store.schema_version().unwrap(), 3);
+        assert_eq!(store.schema_version().unwrap(), SCHEMA_VERSION);
         let exam = store.list_examinations().unwrap().remove(0);
         assert_eq!(exam.analysis_json, r#"{"state":"graded"}"#);
         assert_eq!(store.list_patients().unwrap().len(), 1);

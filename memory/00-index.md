@@ -17,7 +17,7 @@ One vault for backend + GUI. Read in this order: this note, [[01-claude-start-he
 | Who owns what | [[Handoffs/agent-ownership]] |
 | Session history | [[Handoffs/changelog-and-handoffs]] |
 | Architecture | [[Architecture/architecture]], [[Architecture/source-map]] |
-| Models Stage I/II/III | [[Models/model-pipeline]], [[Models/stage-i-screening]], [[Models/stage-ii-segmentation]], [[Models/stage-iii-grading]] |
+| Models Stage I/II/III | [[Models/model-pipeline]], [[Models/stage-i-screening]], [[Models/stage-ii-segmentation]], [[Models/stage-iii-grading]], [[Models/explainability]] |
 | Licensing, data limits | [[Models/licensing-and-data]] |
 | Build/test/CUDA/packaging | [[Testing/build-and-test]], [[Testing/cuda-and-packaging]] |
 | Risks, gotchas, decisions | [[Decisions/risks-and-blockers]], [[Decisions/gotchas]], [[Decisions/decisions]] |

@@ -32,6 +32,37 @@ use crate::{
     },
 };
 
+/// Pin an LG-DRG session to its fold id, checkpoint hash, upstream commit, graph and I/O shapes.
+pub(crate) fn verify_stage3_fold_model(
+    model: &crate::model_manifest::VerifiedModel,
+) -> Result<usize, Stage3InferenceError> {
+    let fold = (0..FOLD_CHECKPOINT_SHA256.len())
+        .find(|fold| model.model_id == format!("hierarchiretina-stage3-lgdrg-fold{fold}"))
+        .ok_or(Stage3InferenceError::IncompatibleModel)?;
+    let checkpoint_sha256 = model
+        .validation
+        .as_ref()
+        .and_then(|value| value.get("checkpoint_sha256"))
+        .and_then(serde_json::Value::as_str);
+    let source_commit = model
+        .validation
+        .as_ref()
+        .and_then(|value| value.get("source_commit"))
+        .and_then(serde_json::Value::as_str);
+    if model.version != "1.0.0"
+        || model.architecture != "LG-DRG-ConvNeXtV2-L"
+        || model.task != "lg_drg_grading"
+        || model.input_shape != [1, 8, 512, 512]
+        || model.output_schema != "lgdrg_logits"
+        || model.output_shape != [1, 4]
+        || checkpoint_sha256 != Some(FOLD_CHECKPOINT_SHA256[fold])
+        || source_commit != Some("bf84b1d3c7409d2575dff84c7575c67577493a30")
+    {
+        return Err(Stage3InferenceError::IncompatibleModel);
+    }
+    Ok(fold)
+}
+
 #[derive(Debug, Error)]
 pub enum Stage1InferenceError {
     #[error(transparent)]
@@ -374,31 +405,7 @@ impl ModelRuntime {
             .get_mut(&request.model_id)
             .ok_or_else(|| ModelRuntimeError::NotLoaded(request.model_id.clone()))?;
         let model = session.model();
-        let fold = (0..FOLD_CHECKPOINT_SHA256.len())
-            .find(|fold| model.model_id == format!("hierarchiretina-stage3-lgdrg-fold{fold}"))
-            .ok_or(Stage3InferenceError::IncompatibleModel)?;
-        let checkpoint_sha256 = model
-            .validation
-            .as_ref()
-            .and_then(|value| value.get("checkpoint_sha256"))
-            .and_then(serde_json::Value::as_str)
-            .map(str::to_owned);
-        let source_commit = model
-            .validation
-            .as_ref()
-            .and_then(|value| value.get("source_commit"))
-            .and_then(serde_json::Value::as_str);
-        if model.version != "1.0.0"
-            || model.architecture != "LG-DRG-ConvNeXtV2-L"
-            || model.task != "lg_drg_grading"
-            || model.input_shape != [1, 8, 512, 512]
-            || model.output_schema != "lgdrg_logits"
-            || model.output_shape != [1, 4]
-            || checkpoint_sha256.as_deref() != Some(FOLD_CHECKPOINT_SHA256[fold])
-            || source_commit != Some("bf84b1d3c7409d2575dff84c7575c67577493a30")
-        {
-            return Err(Stage3InferenceError::IncompatibleModel);
-        }
+        let fold = verify_stage3_fold_model(model)?;
         let model_version = model.version.clone();
         let model_sha256 = model.sha256.clone();
         let provider = session.actual_provider();
@@ -431,6 +438,15 @@ impl ModelRuntime {
             elapsed_microseconds: started.elapsed().as_micros(),
             research_only: true,
         })
+    }
+
+    pub(crate) fn session_mut(
+        &mut self,
+        model_id: &str,
+    ) -> Result<&mut VerifiedSession, ModelRuntimeError> {
+        self.sessions
+            .get_mut(model_id)
+            .ok_or_else(|| ModelRuntimeError::NotLoaded(model_id.to_owned()))
     }
 
     /// Drop the session and release its runtime-owned resources.

@@ -46,6 +46,13 @@ pub enum PdfLine {
     /// Bold warning-style line (research-only banner, limitations).
     Banner(String),
     Blank,
+    /// 8-bit RGB picture on its own page (`rgb.len() == width * height * 3`), with a caption above it.
+    Image {
+        caption: String,
+        width: u32,
+        height: u32,
+        rgb: Vec<u8>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -161,12 +168,51 @@ pub fn render_pdf(document: &PdfDocument) -> Result<Vec<u8>, ReportError> {
         size: 10.0,
         text: String::new(),
     });
+    enum Page<'a> {
+        Text(&'a [Row]),
+        Picture {
+            caption: Vec<Row>,
+            width: u32,
+            height: u32,
+            rgb: &'a [u8],
+        },
+    }
+    let per_page = ((PAGE_HEIGHT - 2.0 * MARGIN) / LINE_HEIGHT) as usize;
+    let mut pictures: Vec<(Vec<Row>, u32, u32, &[u8])> = Vec::new();
     for line in &document.lines {
+        if let PdfLine::Image {
+            caption,
+            width,
+            height,
+            rgb,
+        } = line
+        {
+            if *width == 0
+                || *height == 0
+                || *width > 4000
+                || *height > 4000
+                || rgb.len() != *width as usize * *height as usize * 3
+            {
+                return Err(ReportError::Invalid("embedded image has inconsistent size"));
+            }
+            let caption_rows: Vec<Row> = wrap(&sanitise(caption), WRAP_COLUMNS)
+                .into_iter()
+                .map(|text| Row {
+                    bold: false,
+                    size: 10.0,
+                    text,
+                })
+                .collect();
+            // Pictures get their own pages after all text rows.
+            pictures.push((caption_rows, *width, *height, rgb));
+            continue;
+        }
         let (bold, size, text, columns) = match line {
             PdfLine::Heading(t) => (true, 12.0, t.as_str(), WRAP_COLUMNS - 12),
             PdfLine::Text(t) => (false, 10.0, t.as_str(), WRAP_COLUMNS),
             PdfLine::Banner(t) => (true, 10.0, t.as_str(), WRAP_COLUMNS - 6),
             PdfLine::Blank => (false, 10.0, "", WRAP_COLUMNS),
+            PdfLine::Image { .. } => unreachable!(),
         };
         for piece in wrap(&sanitise(text), columns) {
             rows.push(Row {
@@ -176,13 +222,25 @@ pub fn render_pdf(document: &PdfDocument) -> Result<Vec<u8>, ReportError> {
             });
         }
     }
-    let per_page = ((PAGE_HEIGHT - 2.0 * MARGIN) / LINE_HEIGHT) as usize;
-    let pages: Vec<&[Row]> = rows.chunks(per_page).collect();
+    let mut pages: Vec<Page> = rows.chunks(per_page).map(Page::Text).collect();
+    for (caption, width, height, rgb) in pictures {
+        pages.push(Page::Picture {
+            caption,
+            width,
+            height,
+            rgb,
+        });
+    }
+    let picture_count = pages
+        .iter()
+        .filter(|p| matches!(p, Page::Picture { .. }))
+        .count();
 
     let mut objects: Vec<String> = Vec::new();
     objects.push("<< /Type /Catalog /Pages 2 0 R >>".into());
+    let first_page_id = 5 + picture_count;
     let kids: String = (0..pages.len())
-        .map(|i| format!("{} 0 R", 5 + 2 * i))
+        .map(|i| format!("{} 0 R", first_page_id + 2 * i))
         .collect::<Vec<_>>()
         .join(" ");
     objects.push(format!(
@@ -196,13 +254,47 @@ pub fn render_pdf(document: &PdfDocument) -> Result<Vec<u8>, ReportError> {
         "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>"
             .into(),
     );
+    // Image XObjects (ASCII-hex encoded so the whole file stays 7-bit and xref offsets stay exact).
+    let mut image_ids: Vec<Option<usize>> = Vec::new();
+    for page in &pages {
+        if let Page::Picture {
+            width, height, rgb, ..
+        } = page
+        {
+            let mut hex = String::with_capacity(rgb.len() * 2 + 1);
+            for byte in rgb.iter() {
+                let _ = write!(hex, "{byte:02x}");
+            }
+            hex.push('>');
+            image_ids.push(Some(5 + image_ids.iter().flatten().count()));
+            objects.push(format!(
+                "<< /Type /XObject /Subtype /Image /Width {width} /Height {height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /ASCIIHexDecode /Length {} >>\nstream\n{hex}\nendstream",
+                hex.len()
+            ));
+        } else {
+            image_ids.push(None);
+        }
+    }
     for (index, page) in pages.iter().enumerate() {
-        let content_id = 6 + 2 * index;
+        let content_id = first_page_id + 1 + 2 * index;
+        let xobject = image_ids[index]
+            .map(|id| format!(" /XObject << /Im0 {id} 0 R >>"))
+            .unwrap_or_default();
         objects.push(format!(
-            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {PAGE_WIDTH} {PAGE_HEIGHT}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents {content_id} 0 R >>"
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {PAGE_WIDTH} {PAGE_HEIGHT}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>{xobject} >> /Contents {content_id} 0 R >>"
         ));
         let mut stream = String::new();
-        for (row_index, row) in page.iter().enumerate() {
+        type Picture<'a> = Option<(&'a Vec<Row>, u32, u32)>;
+        let (rows_here, picture): (&[Row], Picture) = match page {
+            Page::Text(rows) => (rows, None),
+            Page::Picture {
+                caption,
+                width,
+                height,
+                ..
+            } => (&[], Some((caption, *width, *height))),
+        };
+        for (row_index, row) in rows_here.iter().enumerate() {
             let y = PAGE_HEIGHT - MARGIN - LINE_HEIGHT * (row_index as f32 + 1.0);
             let font = if row.bold { "F2" } else { "F1" };
             let _ = writeln!(
@@ -211,6 +303,23 @@ pub fn render_pdf(document: &PdfDocument) -> Result<Vec<u8>, ReportError> {
                 row.size,
                 escape(&row.text)
             );
+        }
+        if let Some((caption, width, height)) = picture {
+            for (row_index, row) in caption.iter().enumerate() {
+                let y = PAGE_HEIGHT - MARGIN - LINE_HEIGHT * (row_index as f32 + 1.0);
+                let _ = writeln!(
+                    stream,
+                    "BT /F1 {} Tf {MARGIN} {y} Td ({}) Tj ET",
+                    row.size,
+                    escape(&row.text)
+                );
+            }
+            let max_w = PAGE_WIDTH - 2.0 * MARGIN;
+            let top = PAGE_HEIGHT - MARGIN - LINE_HEIGHT * (caption.len() as f32 + 1.5);
+            let max_h = top - 60.0;
+            let scale = (max_w / width as f32).min(max_h / height as f32);
+            let (w, h) = (width as f32 * scale, height as f32 * scale);
+            let _ = writeln!(stream, "q {w} 0 0 {h} {MARGIN} {} cm /Im0 Do Q", top - h);
         }
         let _ = writeln!(
             stream,
@@ -385,5 +494,30 @@ mod pdf_tests {
             .count();
         assert_eq!(leftovers, 0);
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn embedded_picture_page_is_valid_and_rejects_bad_sizes() {
+        let mut d = doc();
+        d.lines.push(PdfLine::Image {
+            caption: "Overlay (synthetic test pattern)".into(),
+            width: 4,
+            height: 2,
+            rgb: (0..24).collect(),
+        });
+        let bytes = render_pdf(&d).unwrap();
+        validate_pdf(&bytes).unwrap();
+        assert!(bytes.is_ascii(), "image data must not break xref offsets");
+        let text = String::from_utf8_lossy(&bytes);
+        assert!(text.contains("/Subtype /Image") && text.contains("/Im0 Do"));
+        assert!(text.contains("000102030405060708090a0b0c0d0e0f1011121314151617>"));
+        d.lines.pop();
+        d.lines.push(PdfLine::Image {
+            caption: "bad".into(),
+            width: 4,
+            height: 2,
+            rgb: vec![0; 5],
+        });
+        assert!(matches!(render_pdf(&d), Err(ReportError::Invalid(_))));
     }
 }
