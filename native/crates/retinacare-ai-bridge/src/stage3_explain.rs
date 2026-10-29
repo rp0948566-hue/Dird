@@ -262,8 +262,6 @@ pub struct GradCamTools {
     pub timeout: std::time::Duration,
 }
 
-const WORKER_OUTPUT_LIMIT: usize = 1 << 20;
-
 #[derive(serde::Deserialize)]
 struct GradCamWorkerOutput {
     fold: u8,
@@ -280,11 +278,74 @@ fn target_arg(target: AttributionTarget) -> Result<String, AttributionError> {
         AttributionTarget::Stage3Severity { grade } if (1..=4).contains(&grade) => {
             Ok(format!("severity:{grade}"))
         }
+        // Per-fold probability of the grade in the five-way vector (the ensemble target is their mean).
+        AttributionTarget::Stage3GradeProbability { grade } if (1..=5).contains(&grade) => {
+            Ok(format!("grade:{grade}"))
+        }
         AttributionTarget::Stage3Gradability => Ok("gradability".into()),
         _ => Err(AttributionError::Unsupported(
             "Grad-CAM target not supported",
         )),
     }
+}
+
+fn transform_of(input: &Stage3Input) -> GeometryTransform {
+    GeometryTransform {
+        original_width: input.original_width,
+        original_height: input.original_height,
+        crop_x: input.fundus_crop.x,
+        crop_y: input.fundus_crop.y,
+        crop_width: input.fundus_crop.width,
+        crop_height: input.fundus_crop.height,
+        resized_width: input.resized_width,
+        resized_height: input.resized_height,
+        offset_x: input.offset_x,
+        offset_y: input.offset_y,
+        model_size: MODEL_INPUT as u32,
+    }
+}
+
+fn run_fold_worker(
+    tools: &GradCamTools,
+    fold: u8,
+    input: &Stage3Input,
+    target_text: &str,
+    cancelled: impl FnMut() -> bool,
+) -> Result<GradCamWorkerOutput, AttributionError> {
+    let args = [
+        "--fold".into(),
+        fold.to_string().into(),
+        "--target".into(),
+        target_text.into(),
+        "--checkpoint".into(),
+        tools.checkpoint.clone().into_os_string(),
+    ];
+    let bytes = crate::gradcam_worker::run_worker(
+        &tools.python,
+        &tools.script,
+        &args,
+        &input.tensor,
+        tools.timeout,
+        cancelled,
+    )?;
+    let out: GradCamWorkerOutput = serde_json::from_slice(&bytes)
+        .map_err(|_| AttributionError::Scoring("Grad-CAM worker output invalid".into()))?;
+    if out.fold != fold || out.checkpoint_sha256 != FOLD_CHECKPOINT_SHA256[usize::from(fold)] {
+        return Err(AttributionError::WrongModels);
+    }
+    if out.native_width as usize * out.native_height as usize != out.relu_map.len() {
+        return Err(AttributionError::Dimensions);
+    }
+    Ok(out)
+}
+
+fn artifact_id(input: &Stage3Input, context: &ExplainContext, tag: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(input.image_sha256.as_bytes());
+    hasher.update(context.run_id.as_bytes());
+    hasher.update(format!("{tag}{}", context.generated_unix).as_bytes());
+    hex::encode(&hasher.finalize()[..16])
 }
 
 /// Grad-CAM of ONE fold through the PyTorch EMA weights. The tensor handed to the worker is the exact
@@ -295,93 +356,23 @@ pub fn explain_stage3_gradcam(
     input: &Stage3Input,
     target: AttributionTarget,
     context: &ExplainContext,
-    mut cancelled: impl FnMut() -> bool,
+    cancelled: impl FnMut() -> bool,
 ) -> Result<AttributionArtifact, AttributionError> {
-    use std::io::Read;
-    use std::process::{Command, Stdio};
     let scope = AttributionScope::Stage3SingleFold { fold };
-    validate_combination(AttributionMethod::GradCam, target, scope)?;
-    let target_text = target_arg(target)?;
-    let started = Instant::now();
-    let dir = std::env::temp_dir().join(format!(
-        "retinacare-explain-{}-{}",
-        std::process::id(),
-        started.elapsed().as_nanos() ^ context.generated_unix as u128
-    ));
-    std::fs::create_dir(&dir).map_err(|e| AttributionError::Scoring(e.to_string()))?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700));
-    }
-    let outcome = (|| {
-        let file = dir.join("input.f32");
-        let bytes: Vec<u8> = input.tensor.iter().flat_map(|v| v.to_le_bytes()).collect();
-        std::fs::write(&file, bytes).map_err(|e| AttributionError::Scoring(e.to_string()))?;
-        let mut child = Command::new(&tools.python)
-            .arg("-I")
-            .arg(&tools.script)
-            .args(["--fold", &fold.to_string(), "--target", &target_text])
-            .arg("--checkpoint")
-            .arg(&tools.checkpoint)
-            .arg("--input")
-            .arg(&file)
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
-            .map_err(|e| AttributionError::Scoring(format!("worker did not start: {e}")))?;
-        let mut stdout = child.stdout.take().expect("piped stdout");
-        let reader = std::thread::spawn(move || {
-            let mut buffer = Vec::new();
-            let _ = stdout
-                .by_ref()
-                .take(WORKER_OUTPUT_LIMIT as u64 + 1)
-                .read_to_end(&mut buffer);
-            buffer
-        });
-        loop {
-            match child.try_wait() {
-                Ok(Some(status)) => {
-                    let buffer = reader.join().unwrap_or_default();
-                    if !status.success() || buffer.len() > WORKER_OUTPUT_LIMIT {
-                        return Err(AttributionError::Scoring("Grad-CAM worker failed".into()));
-                    }
-                    return serde_json::from_slice::<GradCamWorkerOutput>(&buffer).map_err(|_| {
-                        AttributionError::Scoring("Grad-CAM worker output invalid".into())
-                    });
-                }
-                Ok(None) => {}
-                Err(e) => return Err(AttributionError::Scoring(e.to_string())),
-            }
-            if cancelled() {
-                let _ = child.kill();
-                let _ = child.wait();
-                return Err(AttributionError::Cancelled);
-            }
-            if started.elapsed() > tools.timeout {
-                let _ = child.kill();
-                let _ = child.wait();
-                return Err(AttributionError::Scoring(
-                    "Grad-CAM worker timed out".into(),
-                ));
-            }
-            std::thread::sleep(std::time::Duration::from_millis(100));
+    // A fold scores grade probabilities with the same vector algebra; only the severity targets are
+    // single-fold labels, so grade probabilities are mapped to them for validation.
+    let label_target = match target {
+        AttributionTarget::Stage3GradeProbability { grade } if grade <= 4 => {
+            AttributionTarget::Stage3Severity { grade }
         }
-    })();
-    let _ = std::fs::remove_dir_all(&dir);
-    let out = outcome?;
-    if out.fold != fold || out.checkpoint_sha256 != FOLD_CHECKPOINT_SHA256[usize::from(fold)] {
-        return Err(AttributionError::WrongModels);
-    }
-    let id = {
-        use sha2::{Digest, Sha256};
-        let mut hasher = Sha256::new();
-        hasher.update(input.image_sha256.as_bytes());
-        hasher.update(context.run_id.as_bytes());
-        hasher.update(format!("gradcam{target:?}{scope:?}{}", context.generated_unix).as_bytes());
-        hex::encode(&hasher.finalize()[..16])
+        AttributionTarget::Stage3GradeProbability { .. } => AttributionTarget::Stage3Gradability,
+        other => other,
     };
+    validate_combination(AttributionMethod::GradCam, label_target, scope)?;
+    let target_text = target_arg(label_target)?;
+    let started = Instant::now();
+    let out = run_fold_worker(tools, fold, input, &target_text, cancelled)?;
+    let id = artifact_id(input, context, &format!("gradcam{label_target:?}{scope:?}"));
     let parameters = std::collections::BTreeMap::from([
         ("feature_layer".to_string(), out.layer.clone()),
         (
@@ -402,7 +393,7 @@ pub fn explain_stage3_gradcam(
         meta: AttributionMeta {
             id,
             method: AttributionMethod::GradCam,
-            target,
+            target: label_target,
             scope,
             provenance: AttributionProvenance {
                 patient_id: context.patient_id,
@@ -425,24 +416,105 @@ pub fn explain_stage3_gradcam(
             baseline_score: out.score,
             native_width: out.native_width,
             native_height: out.native_height,
-            transform: GeometryTransform {
-                original_width: input.original_width,
-                original_height: input.original_height,
-                crop_x: input.fundus_crop.x,
-                crop_y: input.fundus_crop.y,
-                crop_width: input.fundus_crop.width,
-                crop_height: input.fundus_crop.height,
-                resized_width: input.resized_width,
-                resized_height: input.resized_height,
-                offset_x: input.offset_x,
-                offset_y: input.offset_y,
-                model_size: MODEL_INPUT as u32,
-            },
+            transform: transform_of(input),
             feature_layer: out.layer,
             forward_calls: 1,
             elapsed_ms: started.elapsed().as_millis() as u64,
         },
         raw_signed: out.relu_map,
+    };
+    artifact.validate()?;
+    Ok(artifact)
+}
+
+/// Five-fold Grad-CAM: the equal-weight mean of the five per-fold Grad-CAM maps, each computed on its
+/// own network for the SAME five-way target (see `validate_combination`). The baseline score is the mean
+/// of the five fold scores, which is the ensemble target score. Folds run one after another; progress is
+/// `done` of 5; a failed or cancelled fold gives no result at all.
+pub fn explain_stage3_gradcam_ensemble(
+    tools: &[GradCamTools; 5],
+    input: &Stage3Input,
+    target: AttributionTarget,
+    context: &ExplainContext,
+    mut cancelled: impl FnMut() -> bool,
+    mut progress: impl FnMut(u32, u32),
+) -> Result<AttributionArtifact, AttributionError> {
+    let scope = AttributionScope::Stage3FiveFoldEnsemble;
+    validate_combination(AttributionMethod::GradCam, target, scope)?;
+    let target_text = target_arg(target)?;
+    let started = Instant::now();
+    let mut outs = Vec::with_capacity(5);
+    for (fold, tool) in tools.iter().enumerate() {
+        progress(fold as u32, 5);
+        outs.push(run_fold_worker(
+            tool,
+            fold as u8,
+            input,
+            &target_text,
+            &mut cancelled,
+        )?);
+    }
+    progress(5, 5);
+    let len = outs[0].relu_map.len();
+    if outs
+        .iter()
+        .any(|o| o.relu_map.len() != len || o.native_width != outs[0].native_width)
+    {
+        return Err(AttributionError::Dimensions);
+    }
+    let mean: Vec<f32> = (0..len)
+        .map(|i| outs.iter().map(|o| o.relu_map[i]).sum::<f32>() / 5.0)
+        .collect();
+    let baseline = outs.iter().map(|o| o.score).sum::<f64>() / 5.0;
+    let parameters = std::collections::BTreeMap::from([
+        ("feature_layer".to_string(), outs[0].layer.clone()),
+        (
+            "aggregation".into(),
+            "equal-weight mean of five per-fold Grad-CAM maps (each fold: ReLU(sum_k alpha_k A_k) on its own last spatial map)".into(),
+        ),
+        (
+            "explained_score".into(),
+            "mean over the five folds of the fold's 5-way probability for the target".into(),
+        ),
+        (
+            "fold_scores".into(),
+            outs.iter().map(|o| format!("{:.6}", o.score)).collect::<Vec<_>>().join(","),
+        ),
+        ("weights".into(), "pytorch ema checkpoints, weights_only=True".into()),
+    ]);
+    let artifact = AttributionArtifact {
+        meta: AttributionMeta {
+            id: artifact_id(input, context, &format!("gradcam{target:?}{scope:?}")),
+            method: AttributionMethod::GradCam,
+            target,
+            scope,
+            provenance: AttributionProvenance {
+                patient_id: context.patient_id,
+                examination_id: context.examination_id,
+                run_id: context.run_id.clone(),
+                eye: context.eye.clone(),
+                image_sha256: input.image_sha256.clone(),
+                model_ids: (0..5)
+                    .map(|k| format!("hierarchiretina-stage3-lgdrg-fold{k}-pytorch-ema"))
+                    .collect(),
+                model_sha256: outs.iter().map(|o| o.checkpoint_sha256.clone()).collect(),
+                checkpoint_sha256: outs.iter().map(|o| o.checkpoint_sha256.clone()).collect(),
+                folds: vec![0, 1, 2, 3, 4],
+                provider: "pytorch-cpu".into(),
+                algorithm_version: ALGORITHM_VERSION.into(),
+                parameters,
+                generated_unix: context.generated_unix,
+                research_only: true,
+            },
+            baseline_score: baseline,
+            native_width: outs[0].native_width,
+            native_height: outs[0].native_height,
+            transform: transform_of(input),
+            feature_layer: outs[0].layer.clone(),
+            forward_calls: 5,
+            elapsed_ms: started.elapsed().as_millis() as u64,
+        },
+        raw_signed: mean,
     };
     artifact.validate()?;
     Ok(artifact)

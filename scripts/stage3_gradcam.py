@@ -44,9 +44,11 @@ def parse_target(text: str) -> tuple[str, int]:
     if text == "gradability":
         return "gradability", 0
     kind, _, grade = text.partition(":")
-    if kind != "severity" or not grade.isdigit() or not 1 <= int(grade) <= 4:
-        raise SystemExit("target must be 'gradability' or 'severity:1..4'")
-    return kind, int(grade)
+    if kind == "severity" and grade.isdigit() and 1 <= int(grade) <= 4:
+        return kind, int(grade)
+    if kind == "grade" and grade.isdigit() and 1 <= int(grade) <= 5:
+        return kind, int(grade)  # full 5-way vector entry, as the ensemble target averages it
+    raise SystemExit("target must be 'gradability', 'severity:1..4' or 'grade:1..5'")
 
 
 def main() -> int:
@@ -104,7 +106,7 @@ def main() -> int:
     sev, grad = model(x)  # grad mode on: the gradient path must reach `norm`
     handle.remove()
     _, full = lgdrg_predict(sev, grad)
-    score = full[0, grade - 1] if kind == "severity" else 1.0 - full[0, 4]
+    score = full[0, grade - 1] if kind in ("severity", "grade") else 1.0 - full[0, 4]
     model.zero_grad(set_to_none=True)
     score.backward()
     a = captured["a"]

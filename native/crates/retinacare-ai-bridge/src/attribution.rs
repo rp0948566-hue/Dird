@@ -5,7 +5,9 @@
 //! are never stored here. Nothing in this module invents values: a map exists only if a named model
 //! target produced it (Grad-CAM values come from the PyTorch worker, occlusion values from real
 //! forward passes through the pinned ONNX sessions).
-use crate::stage3_grading::{FullVector, Stage3GradingError, ensemble_mean};
+use crate::stage3_grading::{
+    FOLD_CHECKPOINT_SHA256, FullVector, Stage3GradingError, ensemble_mean,
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -96,8 +98,17 @@ pub enum AttributionError {
     Grading(#[from] Stage3GradingError),
 }
 
-/// Reject combinations that would mislabel a result. Grad-CAM on the five-fold ensemble is not
-/// implemented (the mean-probability gradient needs all five graphs); it must show as Unavailable.
+/// Release checkpoint SHA-256 of the Stage I screening gate (`stage1_convnextv2l_768_best_auc_model.pth`).
+pub const STAGE1_CHECKPOINT_SHA256: &str =
+    "89fd275b1624f840bb20f63994710e75e2c4d5d56635011d4ff8e69f3eb60cff";
+
+/// Reject combinations that would mislabel a result.
+///
+/// Grad-CAM of the five-fold ensemble is defined as the equal-weight mean of the five per-fold
+/// Grad-CAM maps, each computed on its own network's last spatial map for the SAME five-way
+/// probability target (the ensemble target is the mean of the folds' probabilities). It is not the
+/// gradient of the mean through one shared layer: the five networks share no feature space.
+/// Occlusion is not implemented for the Stage I gate.
 pub fn validate_combination(
     method: AttributionMethod,
     target: AttributionTarget,
@@ -127,9 +138,9 @@ pub fn validate_combination(
             ));
         }
     }
-    if method == AttributionMethod::GradCam && scope == S::Stage3FiveFoldEnsemble {
+    if method == AttributionMethod::OcclusionSensitivity && scope == S::Stage1Model {
         return Err(AttributionError::Unsupported(
-            "Grad-CAM of the five-fold mean probability is not implemented; use occlusion",
+            "occlusion is not implemented for the Stage I gate; use Grad-CAM",
         ));
     }
     Ok(())
@@ -280,7 +291,47 @@ impl AttributionArtifact {
         if meta.provenance.folds.iter().any(|fold| *fold > 4) {
             return Err(AttributionError::Fold);
         }
+        self.provenance_matches_scope()?;
         meta.transform.validate()
+    }
+
+    /// The folds and pinned checkpoint hashes recorded in the provenance must be exactly the ones the
+    /// scope claims: a fold-0 map can never carry a five-fold label, and a foreign checkpoint is refused.
+    fn provenance_matches_scope(&self) -> Result<(), AttributionError> {
+        let p = &self.meta.provenance;
+        let pinned = |folds: &[u8]| -> Vec<String> {
+            folds
+                .iter()
+                .map(|f| FOLD_CHECKPOINT_SHA256[usize::from(*f)].to_string())
+                .collect()
+        };
+        match self.meta.scope {
+            AttributionScope::Stage1Model => {
+                if !p.folds.is_empty() {
+                    return Err(AttributionError::Fold);
+                }
+                if p.checkpoint_sha256 != [STAGE1_CHECKPOINT_SHA256] {
+                    return Err(AttributionError::WrongModels);
+                }
+            }
+            AttributionScope::Stage3SingleFold { fold } => {
+                if p.folds != [fold] {
+                    return Err(AttributionError::Fold);
+                }
+                if p.checkpoint_sha256 != pinned(&[fold]) {
+                    return Err(AttributionError::WrongModels);
+                }
+            }
+            AttributionScope::Stage3FiveFoldEnsemble => {
+                if p.folds != [0, 1, 2, 3, 4] {
+                    return Err(AttributionError::Fold);
+                }
+                if p.checkpoint_sha256 != pinned(&p.folds) {
+                    return Err(AttributionError::WrongModels);
+                }
+            }
+        }
+        Ok(())
     }
 
     pub fn support(&self) -> Support {
@@ -742,8 +793,21 @@ mod tests {
                 image_sha256: "a".repeat(64),
                 model_ids: vec!["m".into()],
                 model_sha256: vec!["h1".into()],
-                checkpoint_sha256: vec![],
-                folds: vec![0],
+                checkpoint_sha256: match scope {
+                    AttributionScope::Stage1Model => vec![STAGE1_CHECKPOINT_SHA256.to_string()],
+                    AttributionScope::Stage3SingleFold { fold } => {
+                        vec![FOLD_CHECKPOINT_SHA256[usize::from(fold)].to_string()]
+                    }
+                    AttributionScope::Stage3FiveFoldEnsemble => FOLD_CHECKPOINT_SHA256
+                        .iter()
+                        .map(|h| h.to_string())
+                        .collect(),
+                },
+                folds: match scope {
+                    AttributionScope::Stage1Model => vec![],
+                    AttributionScope::Stage3SingleFold { fold } => vec![fold],
+                    AttributionScope::Stage3FiveFoldEnsemble => vec![0, 1, 2, 3, 4],
+                },
                 provider: "cpu".into(),
                 algorithm_version: ALGORITHM_VERSION.into(),
                 parameters: params.to_map(),
@@ -985,9 +1049,19 @@ mod tests {
             .is_ok()
         );
         assert!(validate_combination(GradCam, Stage1DrScreening, Stage3FiveFoldEnsemble).is_err());
+        // Five-fold Grad-CAM is the mean of the per-fold maps of the same five-way target.
         assert!(
-            validate_combination(GradCam, Stage3Severity { grade: 2 }, Stage3FiveFoldEnsemble)
-                .is_err()
+            validate_combination(
+                GradCam,
+                Stage3GradeProbability { grade: 3 },
+                Stage3FiveFoldEnsemble
+            )
+            .is_ok()
+        );
+        assert!(validate_combination(GradCam, Stage3Gradability, Stage3FiveFoldEnsemble).is_ok());
+        assert!(
+            validate_combination(OcclusionSensitivity, Stage1DrScreening, Stage1Model).is_err(),
+            "Stage I occlusion is not implemented"
         );
         assert!(
             validate_combination(
@@ -1048,6 +1122,65 @@ mod tests {
             Err(AttributionError::WrongModels)
         );
         assert_eq!(artifact.verify_models(&["h1".into()]), Ok(()));
+    }
+
+    // P4-C3: fold identity and pinned checkpoint hashes are part of validity.
+    #[test]
+    fn fold_and_checkpoint_identity_must_match_the_scope() {
+        let good = ramp_artifact(); // single fold 0
+        assert_eq!(good.validate(), Ok(()));
+        // A fold-1 checkpoint under a fold-0 label.
+        let mut a = good.clone();
+        a.meta.provenance.checkpoint_sha256 = vec![FOLD_CHECKPOINT_SHA256[1].to_string()];
+        assert_eq!(a.validate(), Err(AttributionError::WrongModels));
+        // A corrupted (unpinned) checkpoint hash.
+        let mut a = good.clone();
+        a.meta.provenance.checkpoint_sha256 = vec!["0".repeat(64)];
+        assert_eq!(a.validate(), Err(AttributionError::WrongModels));
+        // Fold list that disagrees with the scope.
+        let mut a = good.clone();
+        a.meta.provenance.folds = vec![2];
+        assert_eq!(a.validate(), Err(AttributionError::Fold));
+        // A fold-0 map relabelled as the five-fold ensemble.
+        let mut a = good.clone();
+        a.meta.scope = AttributionScope::Stage3FiveFoldEnsemble;
+        a.meta.target = AttributionTarget::Stage3GradeProbability { grade: 2 };
+        assert_eq!(a.validate(), Err(AttributionError::Fold));
+        // A genuine five-fold record validates; dropping one fold or swapping the order does not.
+        let mut five = good.clone();
+        five.meta.scope = AttributionScope::Stage3FiveFoldEnsemble;
+        five.meta.target = AttributionTarget::Stage3GradeProbability { grade: 2 };
+        five.meta.provenance.folds = vec![0, 1, 2, 3, 4];
+        five.meta.provenance.checkpoint_sha256 = FOLD_CHECKPOINT_SHA256
+            .iter()
+            .map(|h| h.to_string())
+            .collect();
+        assert_eq!(five.validate(), Ok(()));
+        let mut four = five.clone();
+        four.meta.provenance.folds.pop();
+        four.meta.provenance.checkpoint_sha256.pop();
+        assert_eq!(four.validate(), Err(AttributionError::Fold));
+        let mut swapped = five.clone();
+        swapped.meta.provenance.checkpoint_sha256.swap(0, 1);
+        assert_eq!(swapped.validate(), Err(AttributionError::WrongModels));
+        // Stage I never carries folds.
+        let mut s1 = good;
+        s1.meta.scope = AttributionScope::Stage1Model;
+        s1.meta.method = AttributionMethod::GradCam;
+        s1.meta.target = AttributionTarget::Stage1DrScreening;
+        assert_eq!(
+            s1.validate(),
+            Err(AttributionError::Fold),
+            "fold list present"
+        );
+        s1.meta.provenance.folds.clear();
+        assert_eq!(
+            s1.validate(),
+            Err(AttributionError::WrongModels),
+            "a fold-0 checkpoint is not the Stage I gate"
+        );
+        s1.meta.provenance.checkpoint_sha256 = vec![STAGE1_CHECKPOINT_SHA256.to_string()];
+        assert_eq!(s1.validate(), Ok(()));
     }
 
     // T12-T14 and T32: shape, non-finite, constant, corrupted payload.

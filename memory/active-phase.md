@@ -32,3 +32,5 @@ Phase 3 (2026-10-28): authentic FIVE-FOLD LG-DRG ensemble implemented and verifi
 Patients page redesign (2026-10-28): Directory restyled and verified in the live app; uncommitted in the GUI repo. See [[GUI/patient-examinations]].
 
 Phase 4 (2026-10-28): authentic explainability implemented and verified on CPU: real occlusion (one fold and the five-fold mean target, 325 forwards, 322 s in the GUI), real Grad-CAM for one fold, raw maps in the encrypted DB (schema v4), restore after restart, PDF section with the real overlay, sidebar Explainability page, Quad fourth panel. Stage I explanation, five-fold Grad-CAM, CUDA, Windows, labelled evaluation NOT done. Evidence: `docs/features/P4-explainability/README.md`, [[Models/explainability]]. Uncommitted.
+
+Phase 5 (2026-10-29): Mode R Home, three science pages, Stage I and five-fold Grad-CAM, SQLCipher chats, Supabase client (live test BLOCKED), PDF evidence. Uncommitted. See [[Handoffs/p5-progress]] and `docs/features/P5-product-completion/README.md`.

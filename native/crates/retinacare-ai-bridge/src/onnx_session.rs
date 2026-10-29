@@ -83,7 +83,7 @@ impl VerifiedSession {
         }
         let builder = Session::builder(environment()?)
             .map_err(|error| SessionError::Build(error.to_string()))?;
-        let (mut builder, actual_provider) = match provider {
+        let (builder, actual_provider) = match provider {
             ProviderRequest::Cpu => (
                 builder
                     .with_execution_providers([ort::ep::CPU::default().build().error_on_failure()])
@@ -111,6 +111,17 @@ impl VerifiedSession {
                     (builder, ActualProvider::Cuda { device_id })
                 }
             }
+        };
+        // Optional CPU thread budget (benchmarking and shared machines). Unset = ONNX Runtime default.
+        let mut builder = match std::env::var("RETINACARE_ORT_INTRA_THREADS")
+            .ok()
+            .and_then(|v| v.parse::<usize>().ok())
+            .filter(|n| (1..=256).contains(n))
+        {
+            Some(threads) => builder
+                .with_intra_threads(threads)
+                .map_err(|error| SessionError::Build(error.to_string()))?,
+            None => builder,
         };
         let session = builder
             .commit_from_file(&model.checkpoint)

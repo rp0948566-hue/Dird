@@ -236,6 +236,12 @@ pub enum AnalysisEvent {
         stage: AnalysisStage,
         reason: SkipReason,
     },
+    /// One Stage III fold finished (`fold` is 0-based, `folds` is 1 or 5). Progress only, never a grade.
+    FoldCompleted {
+        request_id: RequestId,
+        fold: u8,
+        folds: u8,
+    },
     /// Exactly one per accepted request.
     Finished(Box<AnalysisReport>),
 }
@@ -279,6 +285,7 @@ pub trait CascadeRunner {
         request: &AnalysisRequest,
         masks: &[Stage2MaskResult],
         _is_cancelled: &dyn Fn() -> bool,
+        _on_fold: &mut dyn FnMut(usize, usize),
     ) -> Result<Stage3GradeResult, GradeFailure> {
         self.grade(request, masks).map_err(GradeFailure::Failed)
     }
@@ -463,13 +470,23 @@ pub fn run_cascade(
         stage: AnalysisStage::Grading,
     });
     let stage_started = Instant::now();
-    let grading = match runner.grade_cancellable(request, &run.report.masks, is_cancelled) {
-        Ok(result) => result,
-        Err(GradeFailure::Cancelled) => return terminal(run.cancel(AnalysisStage::Grading), emit),
-        Err(GradeFailure::Failed(failure)) => {
-            return terminal(run.fail(AnalysisStage::Grading, failure), emit);
-        }
+    let mut on_fold = |fold: usize, folds: usize| {
+        emit(AnalysisEvent::FoldCompleted {
+            request_id: id,
+            fold: fold as u8,
+            folds: folds as u8,
+        })
     };
+    let grading =
+        match runner.grade_cancellable(request, &run.report.masks, is_cancelled, &mut on_fold) {
+            Ok(result) => result,
+            Err(GradeFailure::Cancelled) => {
+                return terminal(run.cancel(AnalysisStage::Grading), emit);
+            }
+            Err(GradeFailure::Failed(failure)) => {
+                return terminal(run.fail(AnalysisStage::Grading, failure), emit);
+            }
+        };
     run.report.timings.push(StageTiming {
         stage: AnalysisStage::Grading,
         wall_microseconds: stage_started.elapsed().as_micros(),
@@ -531,6 +548,7 @@ fn grading_scope_is_consistent(grading: &Stage3GradeResult) -> bool {
 pub(crate) fn collect_folds<T>(
     count: usize,
     is_cancelled: &dyn Fn() -> bool,
+    on_fold: &mut dyn FnMut(usize, usize),
     mut run_fold: impl FnMut(usize) -> Result<T, StageFailureKind>,
 ) -> Result<Vec<T>, GradeFailure> {
     let mut results = Vec::with_capacity(count);
@@ -539,6 +557,7 @@ pub(crate) fn collect_folds<T>(
             return Err(GradeFailure::Cancelled);
         }
         results.push(run_fold(fold)?);
+        on_fold(fold, count);
     }
     Ok(results)
 }
@@ -667,14 +686,19 @@ impl CascadeRunner for ModelRuntimeRunner<'_> {
         request: &AnalysisRequest,
         masks: &[Stage2MaskResult],
         is_cancelled: &dyn Fn() -> bool,
+        on_fold: &mut dyn FnMut(usize, usize),
     ) -> Result<Stage3GradeResult, GradeFailure> {
         match self.paths.stage3_other_folds.len() {
-            0 => self.grade(request, masks).map_err(GradeFailure::Failed),
+            0 => {
+                let result = self.grade(request, masks).map_err(GradeFailure::Failed)?;
+                on_fold(0, 1);
+                Ok(result)
+            }
             4 => {
                 let manifests: Vec<PathBuf> = std::iter::once(self.paths.stage3_fold0.clone())
                     .chain(self.paths.stage3_other_folds.iter().cloned())
                     .collect();
-                let results = collect_folds(manifests.len(), is_cancelled, |fold| {
+                let results = collect_folds(manifests.len(), is_cancelled, on_fold, |fold| {
                     self.grade_fold(&manifests[fold], request, masks)
                 })?;
                 combine_five_folds(&results).map_err(|error| {
@@ -1384,7 +1408,8 @@ mod tests {
             AnalysisEvent::Started { request_id }
             | AnalysisEvent::StageStarted { request_id, .. }
             | AnalysisEvent::StageCompleted { request_id, .. }
-            | AnalysisEvent::StageSkipped { request_id, .. } => *request_id,
+            | AnalysisEvent::StageSkipped { request_id, .. }
+            | AnalysisEvent::FoldCompleted { request_id, .. } => *request_id,
             AnalysisEvent::Finished(report) => report.request_id,
         }
     }
@@ -1569,6 +1594,9 @@ mod tests {
                     AnalysisEvent::StageSkipped { stage, reason, .. } => {
                         format!("{stage:?} skipped ({reason:?})")
                     }
+                    AnalysisEvent::FoldCompleted { fold, folds, .. } => {
+                        format!("fold {fold}/{folds} done")
+                    }
                     AnalysisEvent::Finished(_) => unreachable!(),
                 }),
                 Err(_) => {
@@ -1729,13 +1757,14 @@ mod tests {
             request: &AnalysisRequest,
             masks: &[Stage2MaskResult],
             is_cancelled: &dyn Fn() -> bool,
+            on_fold: &mut dyn FnMut(usize, usize),
         ) -> Result<Stage3GradeResult, GradeFailure> {
             assert_eq!(masks.len(), 5);
             let folds = self.folds;
             let fail_fold = self.fail_fold;
             let cancel = self.cancel_after_fold.clone();
             let executed = &mut self.executed;
-            let results = collect_folds(5, is_cancelled, |fold| {
+            let results = collect_folds(5, is_cancelled, on_fold, |fold| {
                 executed.push(fold);
                 if fail_fold == Some(fold) {
                     return Err(StageFailureKind::Inference);
@@ -1866,16 +1895,22 @@ mod tests {
     #[test]
     fn collect_folds_stops_at_cancel_and_at_the_first_failure() {
         let seen = std::cell::RefCell::new(Vec::new());
-        let ok = collect_folds(5, NEVER, |f| {
+        let mut progress = Vec::new();
+        let ok = collect_folds(5, NEVER, &mut |f, n| progress.push((f, n)), |f| {
             seen.borrow_mut().push(f);
             Ok(f)
         });
         assert_eq!(ok.unwrap(), vec![0, 1, 2, 3, 4]);
-        let cancelled = collect_folds(5, &|| true, |_| -> Result<u8, StageFailureKind> {
-            panic!("must not run")
-        });
+        assert_eq!(progress, vec![(0, 5), (1, 5), (2, 5), (3, 5), (4, 5)]);
+        let cancelled = collect_folds(
+            5,
+            &|| true,
+            &mut |_, _| {},
+            |_| -> Result<u8, StageFailureKind> { panic!("must not run") },
+        );
         assert_eq!(cancelled.unwrap_err(), GradeFailure::Cancelled);
-        let failed = collect_folds(5, NEVER, |f| {
+        let mut progress = Vec::new();
+        let failed = collect_folds(5, NEVER, &mut |f, n| progress.push((f, n)), |f| {
             if f == 1 {
                 Err(StageFailureKind::ModelIntegrity)
             } else {
@@ -1885,6 +1920,11 @@ mod tests {
         assert_eq!(
             failed.unwrap_err(),
             GradeFailure::Failed(StageFailureKind::ModelIntegrity)
+        );
+        assert_eq!(
+            progress,
+            vec![(0, 5)],
+            "only completed folds report progress"
         );
     }
 
@@ -1909,7 +1949,7 @@ mod tests {
             let paths = paths_with(folds);
             let mut runtime = ModelRuntime::default();
             let mut runner = ModelRuntimeRunner::new(&mut runtime, &paths);
-            let result = runner.grade_cancellable(&request(300), &masks, NEVER);
+            let result = runner.grade_cancellable(&request(300), &masks, NEVER, &mut |_, _| {});
             assert_eq!(
                 result.unwrap_err(),
                 GradeFailure::Failed(StageFailureKind::ModelUnavailable),
@@ -1923,7 +1963,7 @@ mod tests {
         let paths = paths_with(4);
         let mut runtime = ModelRuntime::default();
         let mut runner = ModelRuntimeRunner::new(&mut runtime, &paths);
-        let result = runner.grade_cancellable(&request(301), &[], NEVER);
+        let result = runner.grade_cancellable(&request(301), &[], NEVER, &mut |_, _| {});
         assert!(matches!(result, Err(GradeFailure::Failed(_))));
     }
 }

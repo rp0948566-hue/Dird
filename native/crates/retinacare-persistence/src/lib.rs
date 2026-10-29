@@ -1,9 +1,14 @@
 //! Encrypted local database with repository methods; no generic SQL API.
 
 mod attributions;
+mod chats;
 mod masks;
 pub use attributions::{
     AttributionExpectation, AttributionInput, AttributionSummary, MAX_PER_EXAMINATION,
+};
+pub use chats::{
+    ConversationMode, ConversationSummary, MessageInput, OutboxItem, StoredMessage, is_uuid,
+    new_uuid,
 };
 pub use masks::{
     MASK_FORMAT_VERSION, MASK_KINDS, MaskExpectation, MaskRunInput, StoredMask, StoredMaskRun,
@@ -58,8 +63,9 @@ pub enum StoreError {
 }
 
 /// Current on-disk schema version (`PRAGMA user_version`). v2 adds the append-only audit ledger,
-/// v3 the five-mask run/artifact tables, v4 the attribution (explainability) runs.
-pub const SCHEMA_VERSION: i64 = 4;
+/// v3 the five-mask run/artifact tables, v4 the attribution (explainability) runs, v5 private
+/// conversations and the cloud chat outbox.
+pub const SCHEMA_VERSION: i64 = 5;
 
 /// One append-only audit record. Holds identifiers and statuses only, never image bytes or secrets.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -470,6 +476,9 @@ impl SqlCipherStore {
         }
         if version < 4 {
             script.push_str(attributions::V4_SQL);
+        }
+        if version < 5 {
+            script.push_str(chats::V5_SQL);
         }
         script.push_str(&format!("PRAGMA user_version = {SCHEMA_VERSION}; COMMIT;"));
         let applied = self.connection.execute_batch(&script);

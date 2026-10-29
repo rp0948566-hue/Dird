@@ -44,11 +44,76 @@ pub enum PreprocessError {
     InvalidOutputBuffer,
 }
 
+/// Where the square Stage I window sits in the source image. The window is `side` x `side` pixels with its
+/// top-left corner at (`x`, `y`); parts outside the image (negative `x`/`y`, or past the far edges) are
+/// zero padding. It is then resized to 768 x 768. Recorded so a model-space result can be mapped back.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Stage1Geometry {
+    pub x: i32,
+    pub y: i32,
+    pub side: i32,
+}
+
+/// The part of the Stage I window inside the image, with its place in the 768-pixel model frame.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VisibleWindow {
+    pub crop_x: u32,
+    pub crop_y: u32,
+    pub crop_width: u32,
+    pub crop_height: u32,
+    pub offset_x: u32,
+    pub offset_y: u32,
+    pub resized_width: u32,
+    pub resized_height: u32,
+}
+
+impl Stage1Geometry {
+    /// The part of the window that lies inside an image of `width` x `height`; offsets and resized sizes
+    /// are in 768-pixel model space (rounded to whole model pixels, error under one pixel).
+    pub fn visible(&self, width: u32, height: u32) -> Option<VisibleWindow> {
+        let side = i64::from(self.side);
+        let (w, h) = (i64::from(width), i64::from(height));
+        let (x0, y0) = (i64::from(self.x).max(0), i64::from(self.y).max(0));
+        let (x1, y1) = (
+            (i64::from(self.x) + side).min(w),
+            (i64::from(self.y) + side).min(h),
+        );
+        if side <= 0 || x1 <= x0 || y1 <= y0 {
+            return None;
+        }
+        let k = f64::from(STAGE1_IMAGE_SIZE) / side as f64;
+        let model = |v: i64| ((v - i64::from(self.x)) as f64 * k).round() as i64;
+        let model_y = |v: i64| ((v - i64::from(self.y)) as f64 * k).round() as i64;
+        let (ox, oy) = (model(x0), model_y(y0));
+        let (ex, ey) = (model(x1), model_y(y1));
+        if ex <= ox
+            || ey <= oy
+            || ox < 0
+            || oy < 0
+            || ex > i64::from(STAGE1_IMAGE_SIZE)
+            || ey > i64::from(STAGE1_IMAGE_SIZE)
+        {
+            return None;
+        }
+        Some(VisibleWindow {
+            crop_x: x0 as u32,
+            crop_y: y0 as u32,
+            crop_width: (x1 - x0) as u32,
+            crop_height: (y1 - y0) as u32,
+            offset_x: ox as u32,
+            offset_y: oy as u32,
+            resized_width: (ex - ox) as u32,
+            resized_height: (ey - oy) as u32,
+        })
+    }
+}
+
 #[derive(Debug)]
 pub struct PreprocessedStage1Image {
     pub image_sha256: String,
     pub original_width: u32,
     pub original_height: u32,
+    pub geometry: Stage1Geometry,
     /// Contiguous float32 RGB tensor in CHW order (implicit batch size 1).
     pub tensor: Vec<f32>,
     pub preprocessing_version: &'static str,
@@ -97,12 +162,13 @@ pub fn preprocess_stage1_bytes(encoded: &[u8]) -> Result<PreprocessedStage1Image
     if source.depth() != core::CV_8U || source.channels() != 3 {
         return Err(PreprocessError::UnsupportedDecodedImage);
     }
-    let processed = preprocess_gate_bgr(&source)?;
+    let (processed, geometry) = preprocess_gate_bgr(&source)?;
     let tensor = normalize_rgb_to_chw(&processed)?;
     Ok(PreprocessedStage1Image {
         image_sha256,
         original_width: width,
         original_height: height,
+        geometry,
         tensor,
         preprocessing_version: PREPROCESSING_VERSION,
     })
@@ -122,7 +188,7 @@ fn ensure_dimensions_within_limits(width: u32, height: u32) -> Result<(), Prepro
     Ok(())
 }
 
-fn preprocess_gate_bgr(source: &Mat) -> Result<Mat, PreprocessError> {
+fn preprocess_gate_bgr(source: &Mat) -> Result<(Mat, Stage1Geometry), PreprocessError> {
     let mut gray = Mat::default();
     imgproc::cvt_color_def(source, &mut gray, imgproc::COLOR_BGR2GRAY)?;
     let mut thresholded = Mat::default();
@@ -143,6 +209,7 @@ fn preprocess_gate_bgr(source: &Mat) -> Result<Mat, PreprocessError> {
     let mut mask = Mat::default();
     imgproc::morphology_ex_def(&closed, &mut mask, imgproc::MORPH_OPEN, &kernel)?;
     let bounds = detect_retinal_bounds(&mask)?;
+    let geometry = square_window(source.rows(), source.cols(), bounds);
     let mut image = square_retinal_crop(source, bounds)?;
     let interpolation = if image.rows().max(image.cols()) > STAGE1_IMAGE_SIZE {
         imgproc::INTER_AREA
@@ -161,7 +228,25 @@ fn preprocess_gate_bgr(source: &Mat) -> Result<Mat, PreprocessError> {
     image = green_channel_boost(&resized)?;
     image = ben_graham(&image)?;
     image = lab_clahe(&image)?;
-    unsharp_mask(&image)
+    Ok((unsharp_mask(&image)?, geometry))
+}
+
+/// The same window `square_retinal_crop` cuts, as plain numbers.
+fn square_window(height: i32, width: i32, bounds: Option<core::Rect>) -> Stage1Geometry {
+    let (side, cx, cy) = if let Some(bounds) = bounds {
+        (
+            bounds.width.max(bounds.height),
+            bounds.x + bounds.width / 2,
+            bounds.y + bounds.height / 2,
+        )
+    } else {
+        (height.min(width), width / 2, height / 2)
+    };
+    Stage1Geometry {
+        x: cx - side / 2,
+        y: cy - side / 2,
+        side,
+    }
 }
 
 fn detect_retinal_bounds(mask: &Mat) -> Result<Option<core::Rect>, PreprocessError> {
@@ -326,6 +411,107 @@ fn normalize_rgb_to_chw(bgr: &Mat) -> Result<Vec<f32>, PreprocessError> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn square_window_matches_the_crop_for_centred_padded_and_boundless_images() {
+        // Retina box 100 wide x 60 high at (50, 20), 8 px margin is already inside `bounds`.
+        let b = core::Rect::new(50, 20, 100, 60);
+        let g = square_window(200, 300, Some(b));
+        assert_eq!(
+            g,
+            Stage1Geometry {
+                x: 50,
+                y: 0,
+                side: 100
+            }
+        ); // centre (100,50): x1=50, y1=0
+        // The window reaches past the top edge: negative y means zero padding on top.
+        let b = core::Rect::new(10, 0, 80, 100);
+        let g = square_window(100, 100, Some(b));
+        assert_eq!(g.side, 100);
+        assert!(g.x <= 10 && g.y == 0);
+        // No retina found: the largest centred square.
+        let g = square_window(480, 640, None);
+        assert_eq!(
+            g,
+            Stage1Geometry {
+                x: 80,
+                y: 0,
+                side: 480
+            }
+        );
+        // The window and the pixels square_retinal_crop returns have the same size.
+        let src =
+            Mat::new_rows_cols_with_default(120, 200, core::CV_8UC3, Scalar::all(10.0)).unwrap();
+        let bounds = Some(core::Rect::new(30, 10, 140, 100));
+        let crop = square_retinal_crop(&src, bounds).unwrap();
+        let g = square_window(120, 200, bounds);
+        assert_eq!((crop.rows(), crop.cols()), (g.side, g.side));
+    }
+
+    #[test]
+    fn visible_part_of_the_window_maps_into_model_space_without_overflow() {
+        // Window larger than the image on the left and top: the visible part starts inside the model frame.
+        let g = Stage1Geometry {
+            x: -50,
+            y: -10,
+            side: 200,
+        };
+        let v = g.visible(150, 190).unwrap();
+        let (ox, oy, rw, rh) = (v.offset_x, v.offset_y, v.resized_width, v.resized_height);
+        assert_eq!(
+            (v.crop_x, v.crop_y, v.crop_width, v.crop_height),
+            (0, 0, 150, 190)
+        );
+        let k: f64 = 768.0 / 200.0;
+        assert_eq!(
+            (ox, oy),
+            ((50.0 * k).round() as u32, (10.0 * k).round() as u32)
+        );
+        assert!(ox + rw <= 768 && oy + rh <= 768);
+        assert_eq!(
+            ox + rw,
+            768,
+            "the visible part reaches the far model edge when it reaches the window edge"
+        );
+        // Window entirely inside: the visible part fills the whole model frame.
+        let g = Stage1Geometry {
+            x: 10,
+            y: 20,
+            side: 100,
+        };
+        assert_eq!(
+            g.visible(500, 500),
+            Some(VisibleWindow {
+                crop_x: 10,
+                crop_y: 20,
+                crop_width: 100,
+                crop_height: 100,
+                offset_x: 0,
+                offset_y: 0,
+                resized_width: 768,
+                resized_height: 768
+            })
+        );
+        // Window with no overlap, or a degenerate one.
+        assert_eq!(
+            Stage1Geometry {
+                x: 600,
+                y: 0,
+                side: 100
+            }
+            .visible(500, 500),
+            None
+        );
+        assert_eq!(
+            Stage1Geometry {
+                x: 0,
+                y: 0,
+                side: 0
+            }
+            .visible(500, 500),
+            None
+        );
+    }
     use super::*;
     use opencv::{core, imgcodecs, prelude::*};
     use std::{
