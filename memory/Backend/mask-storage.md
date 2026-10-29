@@ -22,3 +22,6 @@ Binary masks only (no probabilities, heatmaps or images). Not tamper-proof again
 Synthetic exam, real release GUI: five masks stored after Run Full Analysis; relaunch, unlock, reopen showed restored lesion and vessel overlays with "No model was run". Pixel identity and checksums were verified by the in-process tests, not by reading the screen. Screenshots: `docs/features/P2-mask-persistence/evidence/`.
 
 - Schema v4 (2026-10-28) adds `attribution_runs` in the same encrypted database for Phase 4 explanation maps: [[Models/explainability]].
+
+## Phase 5 (2026-10-29)
+- Schema v5 adds `conversations`, `conversation_messages`, `chat_outbox` (see `retinacare-persistence/src/chats.rs`). Masks unchanged.

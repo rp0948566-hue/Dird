@@ -2,7 +2,7 @@
 title: Active phase and verified state
 type: status
 status: PARTIAL
-verified_on: 2026-10-28
+verified_on: 2026-10-29
 ---
 # Active phase (2026-10-28): GUI + backend integrated into one native app
 
@@ -33,4 +33,4 @@ Patients page redesign (2026-10-28): Directory restyled and verified in the live
 
 Phase 4 (2026-10-28): authentic explainability implemented and verified on CPU: real occlusion (one fold and the five-fold mean target, 325 forwards, 322 s in the GUI), real Grad-CAM for one fold, raw maps in the encrypted DB (schema v4), restore after restart, PDF section with the real overlay, sidebar Explainability page, Quad fourth panel. Stage I explanation, five-fold Grad-CAM, CUDA, Windows, labelled evaluation NOT done. Evidence: `docs/features/P4-explainability/README.md`, [[Models/explainability]]. Uncommitted.
 
-Phase 5 (2026-10-29): Mode R Home, three science pages, Stage I and five-fold Grad-CAM, SQLCipher chats, Supabase client (live test BLOCKED), PDF evidence. Uncommitted. See [[Handoffs/p5-progress]] and `docs/features/P5-product-completion/README.md`.
+Phase 5 (2026-10-29): Mode R Home, three science pages, Stage I and five-fold Grad-CAM, SQLCipher chats, Supabase client (live test BLOCKED), PDF evidence. Committed locally: parent `4a936ec`, GUI `c3e4665`; not pushed. See [[Handoffs/p5-progress]] and `docs/features/P5-product-completion/README.md`.

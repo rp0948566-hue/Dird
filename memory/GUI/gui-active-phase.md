@@ -25,3 +25,6 @@ Next milestone: Await user authorization before git commit, push, or Task 08.
 
 ## Update 2026-10-28 (integration, Claude)
 The GUI is now wired to the real backend: cascade, encrypted persistence, PDF, audit. Tests 166 passed / 2 ignored, fmt + clippy clean, release build ok. Where this note says "durable persistence PARTIAL/BLOCKED" or "119 tests", see [[active-phase]] and [[Integration/gui-backend-integration]] for the current state.
+
+## Phase 5 (2026-10-29)
+- Home: Research Analysis (default) and Chat Assistant modes; live analysis cards. Pages: Lesion Analysis, Vessel Analysis, Research Findings. Ledger: [[Handoffs/p5-progress]].

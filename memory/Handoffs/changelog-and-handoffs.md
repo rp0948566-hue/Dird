@@ -213,3 +213,10 @@ were changed. The two repositories' prior uncommitted work remains intact.
 - Verified: backend 157/0/21 ignored, GUI 188/0/2 ignored, fmt, clippy -D warnings, release builds; heavy: occlusion fold 0 and five-fold, deletion/insertion, Grad-CAM parity, full five-fold cascade regression; live desktop analysis, explanation, cancel, PDF, restart restore, 1280/1024/700 screenshots. Evidence: `docs/features/P4-explainability/README.md`, [[Models/explainability]].
 - Not done: Stage I explanation, five-fold Grad-CAM, CUDA, Windows, labelled evaluation. Nothing committed or pushed; Phase 5 not started.
 
+
+## 2026-10-29: Phase 4 and Phase 5 (committed locally, not pushed)
+- Phase 4 commits: parent `8581790`, GUI `0f14417`. Backend 157 pass / 21 ignored; GUI 188 pass / 2 ignored at that time.
+- Phase 5 commits: parent `4a936ec`, GUI `c3e4665`. Backend 172 pass / 21 ignored; GUI 225 pass / 3 ignored.
+- Built and run on desktop: Mode R Home with live cards, Lesion/Vessel/Research Findings pages, Stage I and five-fold Grad-CAM, encrypted chats v5, PDF evidence grid, stable DB location.
+- Blocked: Mode C (no `llama-server`), live Supabase two-user test, mask ablation, Windows.
+- Evidence: `docs/features/P5-product-completion/` (README, plan, 27 screenshots). Ledger: [[Handoffs/p5-progress]].

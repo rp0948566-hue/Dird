@@ -3,7 +3,7 @@ title: Phase 4 explainability (occlusion and Grad-CAM)
 type: model-feature
 domain: AI
 status: PARTIAL
-verified_on: 2026-10-28
+verified_on: 2026-10-29
 source_refs:
   - "../../docs/features/P4-explainability/README.md"
 owner: Claude backend + GUI
@@ -19,3 +19,9 @@ Real attribution only: occlusion through the pinned ONNX LG-DRG sessions (one fo
 - Not done: Stage I explanation (no exposed preprocessing geometry), five-fold Grad-CAM, CUDA, Windows, labelled evaluation, mask-channel ablation.
 - Caveats: occlusion cells are 64 px; Grad-CAM under global pooling gives the same pattern with opposite sign for competing grades; a saturated target (P(gradable) 1.0) gives an empty map that the app rejects; faithfulness numbers are one image, one fold.
 - Related: [[Models/stage-iii-grading]], [[Models/model-inventory]], [[Backend/security]].
+
+## Phase 5 additions (2026-10-29)
+- Stage I Grad-CAM (`scripts/stage1_gradcam.py`, `retinacare-ai-bridge/src/stage1_explain.rs`): baseline 0.998319 = ONNX; map restored via `Stage1Geometry`.
+- Five-fold Grad-CAM: equal-weight mean of five per-fold maps, same five-way target. Baseline 0.762148 = ensemble. Not a gradient through one shared layer.
+- Provenance checks: fold list and pinned checkpoint hash must match scope (`attribution.rs`).
+- Occlusion for Stage I not implemented. Mask ablation not done.

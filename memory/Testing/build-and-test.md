@@ -3,7 +3,7 @@ title: Build and test evidence
 type: operations
 domain: verification
 status: PARTIAL
-verified_on: 2026-10-28
+verified_on: 2026-10-29
 source_refs:
   - "../../docs/migration-progress.md"
   - "../../docs/features/P0-02-stage2-segmentation/07-test-results.md"
@@ -65,3 +65,8 @@ Backend 134 passed / 0 failed / 18 ignored; GUI 172 / 0 / 2. Heavy: per-fold Rus
 ## Phase 4 run 2026-10-28
 Backend `cargo test --workspace`: 157 passed, 0 failed, 21 ignored; GUI: 188 passed, 0 failed, 2 ignored; fmt, `clippy -D warnings`, release builds, `git diff --check` pass in both repos. Heavy, run individually (env `RETINACARE_CASCADE_*`, `RETINACARE_EXPLAIN_MASKS`, `RETINACARE_REPO`): `local_real_model_occlusion_and_deletion` (fold 0; five-fold with `RETINACARE_CASCADE_OTHER_FOLD_MANIFESTS`), `local_deletion_insertion_faithfulness`, `local_gradcam_score_matches_onnx`, full cascade `local_full_cascade_technical_trace_matches_references`. Desktop: Xvfb session as above; scroll helper for page sections; Ctrl+wheel zooms the explanation frames. See [[Models/explainability]].
 
+
+## 2026-10-29 gates
+- Backend `cargo test --workspace --manifest-path native/Cargo.toml`: 172 passed, 0 failed, 21 ignored. `clippy -D warnings`, `fmt`, `git diff --check` clean.
+- GUI `cargo test` (rust/): 225 passed, 0 failed, 3 ignored. `clippy --all-targets -D warnings` clean.
+- Heavy ignored tests not rerun in this session except local CUDA Stage I (CPU logit 6.386447, GPU 6.386831).

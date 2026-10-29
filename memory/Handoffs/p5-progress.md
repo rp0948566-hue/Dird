@@ -4,7 +4,7 @@ type: status
 status: PARTIAL
 verified_on: 2026-10-29
 ---
-# Phase 5 progress (uncommitted; Phase 4 commits `8581790` backend, `0f14417` GUI)
+# Phase 5 progress (committed locally: parent `4a936ec`, GUI `c3e4665`; not pushed)
 
 Spec: user PDF + prompts (not in repo). Plan: `docs/features/P5-product-completion/plan.md`.
 
@@ -18,5 +18,6 @@ Spec: user PDF + prompts (not in repo). Plan: `docs/features/P5-product-completi
 - M2: Supabase client + keyring + outbox + pull (fake HTTP server, real encrypted store); live two-user test BLOCKED (needs user's accounts).
 - Mode C: local Ollama client; the machine's Ollama has no runtime (`llama-server` missing); running the downloaded official runtime was refused by the permission classifier -> BLOCKED until the user allows it.
 ## Notes
+- Release GUI relaunched 2026-10-29 for user (`target/release/retinacare`).
 - Reboot at 2026-10-29 09:23 wiped /tmp (scratchpad, /tmp/retinacare-models). GPU is healthy again after the reboot (CUDA gate can be retried).
 - Related: [[Models/explainability]], [[Backend/supabase-architecture]], [[Handoffs/next-actions]].
