@@ -24,6 +24,7 @@ One vault for backend + GUI. Read in this order: this note, [[01-claude-start-he
 | Backend data/security | [[Backend/data-contracts]], [[Backend/security]], [[Backend/mask-storage]], [[Backend/supabase-architecture]] |
 | GUI notes (Antigravity) | [[GUI/gui-00-index]] |
 | Phase 5 live ledger | [[Handoffs/p5-progress]] |
+| Medical research chat | [[GUI/medical-research-chat]] |
 
 ## Rules
 - Canonical vault = `/home/claude/Desktop/Dird/memory`. Edit only here.

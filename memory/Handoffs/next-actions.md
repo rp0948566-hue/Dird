@@ -21,3 +21,6 @@ verified_on: 2026-10-29
 8. Housekeeping: remove obsolete `render_pipeline_matrix_card` (kept, `#[allow(dead_code)]`); `RETINACARE_DB_PATH` default location; `rust/target` ~16 GB.
 
 Do not: remove `retinacare-ui`, touch the legacy React/Tauri app, add a second GUI.
+
+- Chat: run 1600x900 check, oversized/encrypted PDF test, persist source chips, fix retry history, then decide READY. See [[GUI/medical-research-chat]].
+- Git: decide push branch (`GUI/Hackthon dezine/CLAUDE.md` says only `dezine`; recent pushes went to `test`).

@@ -38,3 +38,5 @@ Phase 5 (2026-10-29): Mode R Home, three science pages, Stage I and five-fold Gr
 GPU (2026-10-29): provider switch + verified-task resolver committed and pushed without force. Dird `test-gpu` `7c7144c` (fork `rp0948566-hue/Dird`), GUI repo `test` `5ce9ac9` (`rp0948566-hue/AI-Manthan-2.0`). Stage I + Stage II lesion models + vessel are GPU-verified (parity <=0.2%). Stage III five-fold and explainability stay CPU (strict cuda refuses). No real end-to-end GPU analysis yet. Details: [[Testing/cuda-and-packaging]]. Supersedes "CUDA not done" above for the six models only.
 
 Demo (2026-10-29): final release build verified end to end in the real GUI (upload, Stage I-III, Grad-CAM, report, PDF, Ollama chat). Verdict READY as a research demo. GUI repo `test`, backend `test-gpu`. Details: [[Handoffs/changelog-and-handoffs]], [[Testing/cuda-and-packaging]].
+
+Medical research chat (2026-10-29): streaming + PDF paper Q&A with structured page chips, safety prompt, keep_alive; GUI-verified dark/light 1280x820; not READY (1600x900, oversized PDF, skill discovery open). Uncommitted in GUI repo `test`. See [[GUI/medical-research-chat]].

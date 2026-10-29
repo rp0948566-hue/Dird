@@ -234,3 +234,6 @@ were changed. The two repositories' prior uncommitted work remains intact.
 - Files (GUI repo): `rust/src/{chat_app,main}.rs`, `engine/ollama.rs`, `ui/{explain,history}.rs`, `ui2/{patients_page,review_page}.rs`.
 - Tests: GUI 241 passed/3 ignored; native fmt+clippy clean, bridge 109/15 ignored, app 25/8, domain 2, persistence 34, reports 4; parity and provider matrix pass.
 - Ollama: system install broken (`llama-server` missing, needs sudo). Official v0.40.13 extracted to `/home/claude/ollama-user` (outside git); run it on port 11435 and start the GUI with `RETINACARE_OLLAMA_URL=http://127.0.0.1:11435`.
+
+## 2026-10-29 medical research chat
+Changed (GUI `rust/src`): `engine/papers.rs` (new), `engine/ollama.rs`, `engine/mod.rs`, `domain.rs`, `chat_app.rs`, `main.rs`; skill dir `.claude/skills/retinacare-medical-research/`. Tests: fmt+clippy clean, 248 pass/6 ignored (live Ollama). Open: 1600x900, oversized/encrypted PDF, chip persistence, retry history, branch policy (`dezine` vs `test`). Note: [[GUI/medical-research-chat]].
