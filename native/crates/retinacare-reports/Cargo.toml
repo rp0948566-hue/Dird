@@ -7,3 +7,5 @@ license.workspace = true
 [dependencies]
 retinacare-domain = { path = "../retinacare-domain" }
 serde.workspace = true
+ttf-parser = { version = "0.25", default-features = false, features = ["std"] }
+flate2 = "1"
