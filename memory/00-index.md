@@ -31,3 +31,5 @@ One vault for backend + GUI. Read in this order: this note, [[01-claude-start-he
 - `Archive/` = read-only history (old vaults, stale mirrors). Never edit; never trust over canonical notes.
 - Old vault copies stay on disk as backups; `scripts/consolidate-vaults.py check memory` flags sources changed after import.
 - After each task: update [[active-phase]], [[Handoffs/next-actions]], [[Handoffs/changelog-and-handoffs]] with results, changed files, tests, blockers.
+
+- [Full test report 2026-10-31](GUI/full-test-report-2026-10-31.md) - test sweep, PASS/NOT RUN list

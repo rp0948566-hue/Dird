@@ -372,6 +372,17 @@ impl SqlCipherStore {
         Ok(changed > 0)
     }
 
+    /// Permanently remove every conversation with its messages and unsent outbox rows. Patients,
+    /// examinations, masks and reports are separate tables and are not touched.
+    pub fn delete_all_conversations(&self) -> Result<usize, StoreError> {
+        let transaction = self.connection.unchecked_transaction()?;
+        transaction.execute("DELETE FROM conversation_messages", [])?;
+        let removed = transaction.execute("DELETE FROM conversations", [])?;
+        transaction.execute("DELETE FROM chat_outbox", [])?;
+        transaction.commit()?;
+        Ok(removed)
+    }
+
     /// Turn cloud sync on or off. Refused for research conversations, patient-linked ones and any
     /// conversation that ever had an attachment or analysis card. Enabling queues the existing messages.
     pub fn set_conversation_sync(&self, conv_uuid: &str, enabled: bool) -> Result<(), StoreError> {
@@ -686,6 +697,23 @@ mod tests {
             s.set_conversation_sync(&chat, true).is_err(),
             "stays local-only"
         );
+    }
+
+    #[test]
+    fn delete_all_removes_every_conversation_and_message() {
+        let (s, _) = store("delete-all");
+        let a = s
+            .create_conversation("a", ConversationMode::Chat, None, None)
+            .unwrap();
+        let b = s
+            .create_conversation("b", ConversationMode::Chat, None, None)
+            .unwrap();
+        s.append_message(&a, &text("user", "hi")).unwrap();
+        s.append_message(&b, &text("user", "yo")).unwrap();
+        assert_eq!(s.delete_all_conversations().unwrap(), 2);
+        assert!(s.list_conversations("").unwrap().is_empty());
+        assert!(s.load_messages(&a).is_err() && s.load_messages(&b).is_err());
+        assert_eq!(s.delete_all_conversations().unwrap(), 0);
     }
 
     #[test]
