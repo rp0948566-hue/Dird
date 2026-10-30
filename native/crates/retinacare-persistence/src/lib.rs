@@ -760,7 +760,14 @@ mod production_tests {
         assert!(store.reassign_examination(owned, real).is_err());
         store.reassign_examination(draft, real).unwrap();
         let exams = store.list_examinations().unwrap();
-        assert_eq!(exams.iter().find(|e| e.id == Some(draft)).unwrap().patient_id, real);
+        assert_eq!(
+            exams
+                .iter()
+                .find(|e| e.id == Some(draft))
+                .unwrap()
+                .patient_id,
+            real
+        );
         assert!(store.reassign_examination(draft, other).is_err());
         drop(store);
         std::fs::remove_dir_all(dir).ok();

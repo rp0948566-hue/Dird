@@ -123,10 +123,11 @@ pub struct LoadedModel {
 }
 
 /// Tasks whose GPU output was compared with CPU on the installed models
-/// (`local_every_model_gpu_matches_cpu`). Anything not listed, including Stage III grading and
+/// (`local_every_model_gpu_matches_cpu`). Anything not listed, including
 /// explainability, stays on CPU in `auto` and is refused under strict `cuda`.
-pub const GPU_VERIFIED_TASKS: [&str; 6] = [
+pub const GPU_VERIFIED_TASKS: [&str; 7] = [
     "dr_screening_gate",
+    "lg_drg_grading", // all five folds: max relative diff 0.0008 (local_every_model_gpu_matches_cpu)
     "microaneurysm_segmentation",
     "hemorrhage_segmentation",
     "hard_exudate_segmentation",
@@ -1103,7 +1104,9 @@ mod tests {
                 let path = entry.path();
                 if path.is_dir() {
                     stack.push(path);
-                } else if path.file_name().is_some_and(|n| n == "manifest.json") {
+                } else if path.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
+                    n == "manifest.json" || (n.starts_with("manifest_fold") && n.ends_with(".json"))
+                }) {
                     manifests.push(path);
                 }
             }
@@ -1176,8 +1179,9 @@ mod tests {
     }
 
     #[test]
-    fn stage_three_and_unknown_tasks_are_not_gpu_verified() {
-        assert!(!GPU_VERIFIED_TASKS.contains(&"lg_drg_grading"));
+    fn only_verified_tasks_may_use_the_gpu() {
+        assert!(GPU_VERIFIED_TASKS.contains(&"lg_drg_grading"));
+        assert!(!GPU_VERIFIED_TASKS.contains(&"explainability"));
         assert!(GPU_VERIFIED_TASKS.contains(&"dr_screening_gate"));
         assert_eq!(manifest_task(Path::new("/nonexistent/manifest.json")), None);
     }
