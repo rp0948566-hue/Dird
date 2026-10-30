@@ -669,20 +669,16 @@ pub fn render_pdf(document: &PdfDocument) -> Result<Vec<u8>, ReportError> {
                 top - h
             ));
         }
-        let footer = PageRow {
-            bold: false,
-            size: 8.0,
-            text: format!(
-                "Page {} of {total} - research prototype report, not a clinical document",
-                index + 1
-            ),
-            row: 0,
-            x: 0.0,
-            rule: None,
-        };
+        let page_no = format!("Page {} of {total}", index + 1);
         stream.push_str(&format!(
-            "BT /F1 8 Tf {MARGIN} 28 Td {} Tj ET\n",
-            show(&footer.text, false, &mut used)
+            "BT /F1 8 Tf {MARGIN} 28 Td {} Tj ET\nBT /F1 8 Tf {} 28 Td {} Tj ET\n",
+            show(
+                "Research use only \u{b7} Not a diagnostic report \u{b7} Confidential",
+                false,
+                &mut used
+            ),
+            MARGIN + TEXT_WIDTH - text_width(&page_no, false, 8.0),
+            show(&page_no, false, &mut used)
         ));
         let content = pdf.stream("/Filter /FlateDecode", &deflate(stream.as_bytes())?);
         let page_id = pdf.add(

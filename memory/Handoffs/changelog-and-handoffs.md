@@ -256,3 +256,12 @@ Changed (GUI `rust/src`): `engine/papers.rs` (new), `engine/ollama.rs`, `engine/
 - 2026-10-30 ponytail band hidden again (flag off). Token Optimizer bar only. PONYTAIL_DEFAULT_MODE stays ultra.
 - 2026-10-30 set up image-74 bar: ponytail band on (flag removed), PONYTAIL_DEFAULT_MODE=ultra, Token Optimizer status bar on. combined-mode-bar stays backed up outside dev-mods.
 - 2026-10-30 global settings env: TOKEN_OPTIMIZER_STATUS_BAR=1, PONYTAIL_DEFAULT_MODE=ultra. Restart app (not new session) to clear stale STATUS_BAR=0 in the running process.
+
+## 2026-10-30 Task 3 PDF report (VERIFIED in native app, synthetic data)
+- Reports crate: embedded Geist (CID/Identity-H, ToUnicode), table + picture pages, footer "Research use only · Not a diagnostic report · Confidential" + right-aligned page no.
+- GUI `engine/report.rs`: title "Retinal Fundus AI Research Report"; segmentation table + evidence on page 1; original-fundus caption is not a prediction; limitations are case-aware (no-analysis report no longer says fold 0 / text only); font-coverage line when chars are outside Latin.
+- Report page shows "No examination selected." with no active exam (no PATIENT_001 placeholder).
+- Real exports checked page by page: OD (6 pp), OS (6 pp), Unknown+no analysis (2 pp), Unknown+ungradable (2 pp). Scratch DB only; no real patient data.
+- Open: Greek/Cyrillic/CJK BLOCKED (no licensed font bundled); Figma 14:341 PARTIAL (no box/bar drawing; Figma sample data not invented); Stage I negative route not run in UI (unit test only); Patients panel lists max 4 exams (`take(4)`, `ui2/patients_page.rs`).
+- Tests: GUI 261 pass/6 ignored; native bridge 109/15 ignored, reports 8; fmt + clippy -D warnings clean.
+- Git: backend pushed to fork main. GUI `origin/main` (AI-Manthan-2.0) has 231 commits not in `test`; push to main rejected, no force used.
