@@ -26,6 +26,8 @@ use std::{
 use thiserror::Error;
 use zeroize::{Zeroize, Zeroizing};
 
+/// Patient code of the reserved owner of unassigned draft examinations.
+pub const UNASSIGNED_CODE: &str = "UNASSIGNED";
 const SALT_LEN: usize = 16;
 const KEY_LEN: usize = 32;
 const KDF_MEMORY_KIB: u32 = 65_536;
@@ -162,6 +164,72 @@ impl SqlCipherStore {
             params![patient_code, display_name],
         )?;
         Ok(self.connection.last_insert_rowid())
+    }
+
+    /// The reserved owner of examinations that were analysed before any patient was chosen. It holds
+    /// no personal details; `reassign_examination` moves an exam to a real patient on request.
+    pub fn ensure_unassigned_patient(&self) -> Result<i64, StoreError> {
+        let found: Option<i64> = self
+            .connection
+            .query_row(
+                "SELECT id FROM patients WHERE patient_code = ?1",
+                params![UNASSIGNED_CODE],
+                |row| row.get(0),
+            )
+            .ok();
+        match found {
+            Some(id) => Ok(id),
+            None => self.add_patient(UNASSIGNED_CODE, "Unassigned drafts"),
+        }
+    }
+
+    /// Move an unassigned draft examination to an existing real patient, with its stored masks,
+    /// explanations and conversation links. Refuses anything that is not a draft.
+    pub fn reassign_examination(
+        &self,
+        examination_id: i64,
+        to_patient_id: i64,
+    ) -> Result<(), StoreError> {
+        let unassigned = self.ensure_unassigned_patient()?;
+        if to_patient_id == unassigned || self.get_patient(to_patient_id)?.is_none() {
+            return Err(StoreError::InvalidInput);
+        }
+        let (owner, eye): (i64, String) = self
+            .connection
+            .query_row(
+                "SELECT patient_id, eye FROM examinations WHERE id = ?1",
+                params![examination_id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .map_err(|_| StoreError::InvalidInput)?;
+        if owner != unassigned {
+            return Err(StoreError::InvalidInput);
+        }
+        // Stored masks are checksummed against the patient, so they are re-saved under the new owner.
+        let masks = self.load_mask_run(
+            examination_id,
+            &MaskExpectation {
+                patient_id: owner,
+                eye,
+                source_image_sha256: None,
+            },
+        )?;
+        let transaction = self.connection.unchecked_transaction()?;
+        for sql in [
+            "UPDATE examinations SET patient_id = ?1 WHERE id = ?2",
+            // Saved heatmaps carry the old owner in their binding, so they are retired as stale and regenerated.
+            "UPDATE attribution_runs SET patient_id = ?1, status = CASE WHEN status = 'ready' THEN 'stale' ELSE status END WHERE examination_id = ?2",
+            "UPDATE conversations SET patient_id = ?1 WHERE examination_id = ?2",
+        ] {
+            transaction.execute(sql, params![to_patient_id, examination_id])?;
+        }
+        transaction.commit()?;
+        if let Some(run) = masks {
+            let mut input = run.input;
+            input.patient_id = to_patient_id;
+            self.save_mask_run(&input)?;
+        }
+        Ok(())
     }
 
     pub fn list_patients(&self) -> Result<Vec<PatientRecord>, StoreError> {
@@ -677,6 +745,27 @@ mod tests {
 #[cfg(test)]
 mod production_tests {
     use super::*;
+    #[test]
+    fn unassigned_draft_moves_only_to_a_real_patient() {
+        let dir = std::env::temp_dir().join(format!("rc-unassigned-{}", std::process::id()));
+        let path = dir.join("records.sqlite");
+        let store = SqlCipherStore::open(&path, "passphrase").unwrap();
+        let unassigned = store.ensure_unassigned_patient().unwrap();
+        assert_eq!(store.ensure_unassigned_patient().unwrap(), unassigned);
+        let real = store.add_patient("P-1", "Real").unwrap();
+        let other = store.add_patient("P-2", "Other").unwrap();
+        let draft = store.add_examination(unassigned, "op", "").unwrap();
+        let owned = store.add_examination(other, "op", "").unwrap();
+        assert!(store.reassign_examination(draft, unassigned).is_err());
+        assert!(store.reassign_examination(owned, real).is_err());
+        store.reassign_examination(draft, real).unwrap();
+        let exams = store.list_examinations().unwrap();
+        assert_eq!(exams.iter().find(|e| e.id == Some(draft)).unwrap().patient_id, real);
+        assert!(store.reassign_examination(draft, other).is_err());
+        drop(store);
+        std::fs::remove_dir_all(dir).ok();
+    }
+
     #[test]
     fn recovery_file_and_unicode_path_preserve_examinations() {
         let dir = std::env::temp_dir().join(format!(

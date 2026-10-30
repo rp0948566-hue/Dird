@@ -42,6 +42,8 @@ pub fn run_worker(
             .arg("-I")
             .arg(script)
             .args(args)
+            // The app's CUDA library path (for ONNX Runtime) breaks torch's own bundled cuDNN.
+            .env_remove("LD_LIBRARY_PATH")
             .arg("--input")
             .arg(&file)
             .stdin(Stdio::null())

@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -77,6 +78,8 @@ def main() -> int:
     from hierarchiretina.stage3.model import LGDRG
 
     torch.set_num_threads(4)
+    # Use the GPU only when this Python has CUDA torch; RETINACARE_GRADCAM_DEVICE=cpu forces the CPU.
+    device = "cuda" if torch.cuda.is_available() and os.environ.get("RETINACARE_GRADCAM_DEVICE") != "cpu" else "cpu"
     checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
     state = checkpoint["ema"]
     if not all(isinstance(k, str) and isinstance(v, torch.Tensor) for k, v in state.items()):
@@ -84,6 +87,7 @@ def main() -> int:
     model = LGDRG(LGDRGConfig(), pretrained=False)
     model.load_state_dict(state, strict=True)
     model.eval()
+    model.to(device)
     if args.randomize != "none":
         torch.manual_seed(0)
         targets = [model.sev_head, model.grad_head] if args.randomize == "heads" else [model.backbone]
@@ -92,7 +96,7 @@ def main() -> int:
                 if hasattr(sub, "reset_parameters"):
                     sub.reset_parameters()
 
-    x = torch.from_numpy(np.fromfile(args.input, dtype="<f4").reshape(1, 8, 512, 512).copy())
+    x = torch.from_numpy(np.fromfile(args.input, dtype="<f4").reshape(1, 8, 512, 512).copy()).to(device)
     if not torch.isfinite(x).all():
         raise SystemExit("input tensor is not finite")
 
@@ -117,6 +121,7 @@ def main() -> int:
     alpha = gradients.mean(dim=(1, 2))     # (1536,)
     cam = torch.relu((alpha[:, None, None] * activations).sum(0))
     signed = (alpha[:, None, None] * activations).sum(0)  # pre-ReLU map, kept for the signed view
+    cam, signed = cam.cpu(), signed.cpu()
     if not (torch.isfinite(cam).all() and torch.isfinite(signed).all()):
         raise SystemExit("non-finite Grad-CAM")
     json.dump({
@@ -131,6 +136,7 @@ def main() -> int:
         "signed_map": [float(v) for v in signed.flatten()],
         "alpha_abs_mean": float(alpha.abs().mean()),
         "randomized": args.randomize,
+        "device": device,
     }, sys.stdout)
     return 0
 

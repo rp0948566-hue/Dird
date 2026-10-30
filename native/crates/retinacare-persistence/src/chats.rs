@@ -13,7 +13,8 @@ use rusqlite::{OptionalExtension, params};
 const MAX_TITLE: usize = 200;
 const MAX_CONTENT: usize = 100_000;
 const MAX_CARD_JSON: usize = 64 * 1024;
-const MAX_LIST: i64 = 500;
+/// SQLite treats a negative LIMIT as no limit: every saved conversation is listed.
+const MAX_LIST: i64 = -1;
 
 pub(crate) const V5_SQL: &str = "
 CREATE TABLE IF NOT EXISTS conversations (

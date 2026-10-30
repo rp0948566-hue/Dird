@@ -271,6 +271,17 @@ struct GradCamWorkerOutput {
     native_width: u32,
     native_height: u32,
     relu_map: Vec<f32>,
+    /// "cuda" or "cpu"; absent in output of older workers, which ran on the CPU.
+    #[serde(default)]
+    device: String,
+}
+
+fn provider_of(devices: &[&str]) -> String {
+    if !devices.is_empty() && devices.iter().all(|d| *d == "cuda") {
+        "pytorch-cuda".into()
+    } else {
+        "pytorch-cpu".into()
+    }
 }
 
 fn target_arg(target: AttributionTarget) -> Result<String, AttributionError> {
@@ -372,6 +383,7 @@ pub fn explain_stage3_gradcam(
     let target_text = target_arg(label_target)?;
     let started = Instant::now();
     let out = run_fold_worker(tools, fold, input, &target_text, cancelled)?;
+    let provider = provider_of(&[out.device.as_str()]);
     let id = artifact_id(input, context, &format!("gradcam{label_target:?}{scope:?}"));
     let parameters = std::collections::BTreeMap::from([
         ("feature_layer".to_string(), out.layer.clone()),
@@ -407,7 +419,7 @@ pub fn explain_stage3_gradcam(
                 model_sha256: vec![out.checkpoint_sha256.clone()],
                 checkpoint_sha256: vec![out.checkpoint_sha256],
                 folds: vec![fold],
-                provider: "pytorch-cpu".into(),
+                provider,
                 algorithm_version: ALGORITHM_VERSION.into(),
                 parameters,
                 generated_unix: context.generated_unix,
@@ -466,6 +478,7 @@ pub fn explain_stage3_gradcam_ensemble(
         .map(|i| outs.iter().map(|o| o.relu_map[i]).sum::<f32>() / 5.0)
         .collect();
     let baseline = outs.iter().map(|o| o.score).sum::<f64>() / 5.0;
+    let provider = provider_of(&outs.iter().map(|o| o.device.as_str()).collect::<Vec<_>>());
     let parameters = std::collections::BTreeMap::from([
         ("feature_layer".to_string(), outs[0].layer.clone()),
         (
@@ -500,7 +513,7 @@ pub fn explain_stage3_gradcam_ensemble(
                 model_sha256: outs.iter().map(|o| o.checkpoint_sha256.clone()).collect(),
                 checkpoint_sha256: outs.iter().map(|o| o.checkpoint_sha256.clone()).collect(),
                 folds: vec![0, 1, 2, 3, 4],
-                provider: "pytorch-cpu".into(),
+                provider,
                 algorithm_version: ALGORITHM_VERSION.into(),
                 parameters,
                 generated_unix: context.generated_unix,
