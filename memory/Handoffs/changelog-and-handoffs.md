@@ -243,3 +243,16 @@ Changed (GUI `rust/src`): `engine/papers.rs` (new), `engine/ollama.rs`, `engine/
 - Long attachment names cut to 40 chars (`explain::ellipsize`) in chip, card, bubble. File on disk keeps its name.
 - Explainability empty = scratch run not saved to a patient exam. Not a bug. Auto-save to a patient is NOT built (needs a decision).
 - Pushed to `main`: GUI repo AI-Manthan-2.0 (`GUI/Hackthon dezine/` in main layout) and Dird root `memory/`. Tests 251 pass/6 ignored.
+
+## 2026-10-30 ponytail/token-optimizer mode bar (request, not built yet)
+- User asked for a top mode bar in the Claude UI (ponytail off/lite/full/ultra, global) plus Token Optimizer plugin setup from `alexgreensh/token-optimizer`. Screenshots 65.png, 66.png show the existing bar (Copy/Review/Audit/Board/Compact) and the Token Optimizer panel.
+- Status: scope questions pending. No code changed. Install commands are user-run: `/plugin marketplace add alexgreensh/token-optimizer`, `/plugin install token-optimizer@alexgreensh-token-optimizer`.
+- Known: claude-mem memory writes blocked (org disabled subscription access, since 2026-10-29).
+- 2026-10-30 built mod `~/.claude/dev-mods/b120175b-.../combined-mode-bar` (AbovePrompt band: ponytail level buttons + Review/Audit + Token Optimizer quick/audit/dashboard). `claude plugin validate` passes with warnings. Not live-checked: needs hot-reload "Turn them on". Old ponytail band still draws above it (ponytail `band/register.tsx` stacks other mods below its own).
+- 2026-10-30 removed my `combined-mode-bar` mod. Use the Token Optimizer desktop status bar (ships with the token-optimizer plugin, shown above the prompt) instead.
+- 2026-10-30 ponytail band hidden via ~/.claude/.ponytail-band=off (undo: /ponytail band on). Token Optimizer bar is the only one above the prompt.
+- 2026-10-30 ponytail band shown again (flag file removed). Bars above prompt in Dird: ponytail band, Token Optimizer stats bar, combined-mode-bar buttons.
+- 2026-10-30 user wants ponytail band back (original look) + PONYTAIL_DEFAULT_MODE=ultra. combined-mode-bar moved out of dev-mods to scratchpad backup (not deleted).
+- 2026-10-30 ponytail band hidden again (flag off). Token Optimizer bar only. PONYTAIL_DEFAULT_MODE stays ultra.
+- 2026-10-30 set up image-74 bar: ponytail band on (flag removed), PONYTAIL_DEFAULT_MODE=ultra, Token Optimizer status bar on. combined-mode-bar stays backed up outside dev-mods.
+- 2026-10-30 global settings env: TOKEN_OPTIMIZER_STATUS_BAR=1, PONYTAIL_DEFAULT_MODE=ultra. Restart app (not new session) to clear stale STATUS_BAR=0 in the running process.
