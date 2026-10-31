@@ -13,3 +13,5 @@ Run worker checks with `python -m unittest discover -s ai_engine/tests`.
 Protect patient data, model weights, datasets, and secrets from Git.
 Load `docs/index.md` for the document map; read memory index before other vault notes.
 Token Optimizer plugin is on (global); run `/token-optimizer` at long-task starts and after compaction. Auto-compact window is 400K.
+Audits: run `scripts/audit.sh` (clippy, cargo audit, secrets, risky patterns, tests -> docs/audit-latest.md); read only the files it flags.
+Find code with `rg`/symbol search, never read whole crates; use a subagent for wide searches.

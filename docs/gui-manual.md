@@ -1,0 +1,514 @@
+# RetinaCare GUI manual (auto-extracted 2026-10-31)
+
+Source of truth is the code; each row is file:line:text.
+
+## Pages and navigation (29 hits)
+Where each page is declared and routed.
+
+- `main.rs:160:        const PAGES: [AppPage; 11] = [`
+- `main.rs:226:        let active = PAGES`
+- `main.rs:255:            if PAGES[i] == AppPage::PreviousChats {`
+- `main.rs:258:            if PAGES[i] == AppPage::Patients {`
+- `main.rs:263:            self.active_page = PAGES[i];`
+- `main.rs:2756:                            AppPage::Home => {`
+- `main.rs:2782:                            AppPage::Report | AppPage::ReportDoc | AppPage::Assessment => {`
+- `main.rs:2814:                            AppPage::Patients => {`
+- `main.rs:2840:                            AppPage::PreviousChats => {`
+- `main.rs:2874:                            AppPage::Timeline => {`
+- `main.rs:2903:                            AppPage::Explainability => {`
+- `main.rs:2918:                            AppPage::LesionAnalysis => {`
+- `main.rs:2930:                            AppPage::VesselAnalysis => {`
+- `main.rs:2953:                            AppPage::ResearchFindings => {`
+- `main.rs:2973:                            AppPage::Plugins => {`
+- `main.rs:3076:            AppPage::Home => {`
+- `main.rs:3755:            AppPage::Assessment => {`
+- `main.rs:3780:            AppPage::ReportDoc => {`
+- `main.rs:3803:            AppPage::Report => {`
+- `main.rs:4010:            AppPage::PreviousChats => {`
+- `main.rs:4051:            AppPage::Timeline => {`
+- `main.rs:4078:            AppPage::Patients => {`
+- `main.rs:4087:            AppPage::Explainability => {`
+- `main.rs:4090:            AppPage::LesionAnalysis | AppPage::VesselAnalysis | AppPage::ResearchFindings => {`
+- `main.rs:4094:            AppPage::Plugins => {`
+- `science_app.rs:455:                AppPage::LesionAnalysis => render_lesion_page(ui, rect, &mut state, &inputs),`
+- `science_app.rs:456:                AppPage::VesselAnalysis => render_vessel_page(ui, rect, &mut state, &inputs),`
+- `engine/pdf.rs:7:const MAX_PAGES: usize = 100;`
+- `engine/pdf.rs:49:    for &page_num in page_nums.iter().take(MAX_PAGES) {`
+
+## Buttons and clickable labels (24 hits)
+Every button label with its source line; the handler sits within a few lines of it.
+
+- `ui2/composer.rs:387:                    if menu_item(ui, p, &format!("Remove {}", a.display_name)) {`
+- `ui2/composer.rs:473:            if menu_item(ui, p, "Add image (PNG, JPG)") {`
+- `ui2/composer.rs:477:            if menu_item(ui, p, "Add PDF report") {`
+- `ui2/chats_page.rs:210:                        if ui.button("Delete everything").clicked() {`
+- `ui2/chats_page.rs:214:                        if ui.button("Cancel").clicked() {`
+- `main.rs:2051:                if ui.button("Open in browser").clicked() {`
+- `main.rs:2132:                    if ui.button("Open in browser").clicked() {`
+- `main.rs:2135:                    if ui.button("Open in app").clicked() {`
+- `main.rs:3680:                            if ui.button("Close").clicked() {`
+- `cloud_app.rs:141:                if ui.add_enabled(ready && !busy, egui::Button::new("Sign in")).clicked() || (enter && ready && !busy) {`
+- `ui/history.rs:399:                        .button(egui::RichText::new("Reset Filters").size(12.0).color(theme::ACCENT_BLUE()))`
+- `ui/timeline.rs:243:                        .button(egui::RichText::new("Reset Filters").size(12.0).color(theme::ACCENT_BLUE()))`
+- `ui/chat_cards.rs:167:                                Button::new(RichText::new("Assign to patient...").size(11.5).color(theme::DIR_TEXT()))`
+- `ui/chat_cards.rs:185:                                Button::new(RichText::new("Save to examination...").size(11.5).color(theme::DIR_TEXT()))`
+- `ui/chat_cards.rs:242:                        let open = Button::new(RichText::new("Open report").size(11.5).color(theme::DIR_TEXT()))`
+- `ui/save_exam.rs:196:                if ui.button("Cancel").clicked() {`
+- `ui/explain.rs:965:                if ui.button("Cancel").clicked() {`
+- `ui/explain.rs:1128:                    if ui.button("Fit").clicked() {`
+- `ui/explain.rs:1339:                            .add_enabled(can, egui::Button::new("Export overlay PNG"))`
+- `ui/explain.rs:1345:                            .add_enabled(can, egui::Button::new("Export JSON"))`
+- `ui/explain.rs:1511:                                        egui::Button::new("View"),`
+- `ui/explain.rs:1522:                                        egui::Button::new("Compare"),`
+- `ui/explain.rs:1712:        if ui.button("Open Report page (export PDF)").clicked() {`
+- `plugins/mod.rs:188:                                    Button::new(RichText::new("All").size(12.0).color(if is_all {`
+
+## Animations (19 hits)
+Every animation primitive: bool/value tweens, eased curves, timed repaints.
+
+- `ui2/attach_stack.rs:209:    let t = ctx.animate_bool_with_time(key.with("t"), was_open || resp.hovered(), 0.28);`
+- `ui2/shell.rs:53:pub fn smootherstep(t: f32) -> f32 {`
+- `ui2/shell.rs:244:    let t = ctx.animate_bool_with_time_and_easing(`
+- `ui2/shell.rs:248:        smootherstep,`
+- `ui2/composer.rs:206:    let t = ctx.animate_bool_with_time_and_easing(`
+- `ui2/chats_page.rs:4:use super::shell::smootherstep;`
+- `ui2/chats_page.rs:293:    let t = ui.ctx().animate_bool_with_time_and_easing(`
+- `ui2/chats_page.rs:297:        smootherstep,`
+- `ui2/widgets.rs:172:        .animate_bool_with_time_and_easing(resp.id, *value, 0.2, gentle);`
+- `ui2/console.rs:94:        let t = gentle(ctx.animate_bool_with_time(Id::new("ui2_console_anim"), self.open, 0.35));`
+- `main.rs:933:        crate::engine::ollama::release_vram();`
+- `main.rs:2181:        ctx.request_repaint_after(std::time::Duration::from_millis(500));`
+- `main.rs:2661:            let sidebar_t = ui.ctx().animate_bool_with_time_and_easing(`
+- `main.rs:3078:                let dock_t = ui.ctx().animate_bool_with_time_and_easing(`
+- `main.rs:5517:        // Verify egui context registers request_repaint_after without panic`
+- `main.rs:5519:        ctx.request_repaint_after(std::time::Duration::from_millis(500));`
+- `explain_app.rs:509:            ctx.request_repaint_after(std::time::Duration::from_millis(250));`
+- `engine/ollama.rs:100:pub fn release_vram() {`
+- `ui/web_cards.rs:112:        .request_repaint_after(std::time::Duration::from_millis(50));`
+
+## Pipeline stages (51 hits)
+Screening, masks, grading and explainability entry points.
+
+- `main.rs:442:            analysis_stage: AnalysisStage::Idle,`
+- `main.rs:1158:                            == cascade::StageKey::from_stage(cascade::AnalysisStage::Segmentation(`
+- `domain.rs:13:            AnalysisStage::Idle => "Idle",`
+- `domain.rs:14:            AnalysisStage::ReportReady => "Report Ready",`
+- `domain.rs:217:            stage: Some(AnalysisStage::ReportReady),`
+- `cascade_flow_tests.rs:223:        stage: AnalysisStage::Screening,`
+- `cascade_flow_tests.rs:275:        AnalysisStage::Segmentation(Stage2ModelKind::Ma),`
+- `cascade_flow_tests.rs:276:        AnalysisStage::Segmentation(Stage2ModelKind::He),`
+- `cascade_flow_tests.rs:277:        AnalysisStage::Segmentation(Stage2ModelKind::Ex),`
+- `cascade_flow_tests.rs:278:        AnalysisStage::Segmentation(Stage2ModelKind::Cws),`
+- `cascade_flow_tests.rs:279:        AnalysisStage::Segmentation(Stage2ModelKind::Vessel),`
+- `cascade_flow_tests.rs:280:        AnalysisStage::Grading,`
+- `cascade_flow_tests.rs:454:        stage: AnalysisStage::Screening,`
+- `cascade_flow_tests.rs:474:        stage: AnalysisStage::Screening,`
+- `engine/cascade.rs:61:        StageKey::Screening,`
+- `engine/cascade.rs:62:        StageKey::Ma,`
+- `engine/cascade.rs:63:        StageKey::He,`
+- `engine/cascade.rs:64:        StageKey::Ex,`
+- `engine/cascade.rs:65:        StageKey::Cws,`
+- `engine/cascade.rs:66:        StageKey::Vessel,`
+- `engine/cascade.rs:67:        StageKey::Grading,`
+- `engine/cascade.rs:84:            AnalysisStage::Screening => Self::Screening,`
+- `engine/cascade.rs:85:            AnalysisStage::Segmentation(Stage2ModelKind::Ma) => Self::Ma,`
+- `engine/cascade.rs:86:            AnalysisStage::Segmentation(Stage2ModelKind::He) => Self::He,`
+- `engine/cascade.rs:87:            AnalysisStage::Segmentation(Stage2ModelKind::Ex) => Self::Ex,`
+- `engine/cascade.rs:88:            AnalysisStage::Segmentation(Stage2ModelKind::Cws) => Self::Cws,`
+- `engine/cascade.rs:89:            AnalysisStage::Segmentation(Stage2ModelKind::Vessel) => Self::Vessel,`
+- `engine/cascade.rs:90:            AnalysisStage::Grading => Self::Grading,`
+- `engine/cascade.rs:290:        self.stages = StageKey::ALL`
+- `engine/cascade.rs:317:                if let Some(row) = self.row(StageKey::from_stage(*stage)) {`
+- `engine/cascade.rs:323:                if let Some(row) = self.row(StageKey::from_stage(*stage)) {`
+- `engine/cascade.rs:330:                if let Some(row) = self.row(StageKey::from_stage(*stage)) {`
+- `engine/cascade.rs:337:                if let Some(row) = self.row(StageKey::Grading) {`
+- `engine/cascade.rs:682:                    key: StageKey::from_stage(AnalysisStage::Segmentation(m.model_kind)),`
+- `engine/cascade.rs:708:            .map(|f| StageKey::from_stage(f.stage).label().to_string()),`
+- `engine/cascade.rs:716:                    StageKey::from_stage(t.stage).label().to_string(),`
+- `engine/cascade.rs:1162:                stage: AnalysisStage::Screening`
+- `engine/cascade.rs:1274:            stage: AnalysisStage::Grading,`
+- `engine/cascade.rs:1329:            stage: AnalysisStage::Screening,`
+- `ui/viewer.rs:999:                    "run_stage1_screening_btn",`
+- `ui/cascade_cards.rs:60:        StageKey::Screening => "Screening",`
+- `ui/cascade_cards.rs:61:        StageKey::Ma => "MA",`
+- `ui/cascade_cards.rs:62:        StageKey::He => "HE",`
+- `ui/cascade_cards.rs:63:        StageKey::Ex => "EX",`
+- `ui/cascade_cards.rs:64:        StageKey::Cws => "CWS",`
+- `ui/cascade_cards.rs:65:        StageKey::Vessel => "Vessel",`
+- `ui/cascade_cards.rs:66:        StageKey::Grading => "Grading",`
+- `ui/cascade_cards.rs:562:            key: StageKey::Screening,`
+- `ui/science.rs:649:                            if !matches!(m.key, crate::engine::cascade::StageKey::Vessel) {`
+- `ui/science.rs:895:                            .find(|m| m.key == crate::engine::cascade::StageKey::Vessel)`
+- `ui/science.rs:915:                    .find(|m| m.key == crate::engine::cascade::StageKey::Vessel)`
+
+## Chat and AI (18 hits)
+Prompt, grounding and guardrails.
+
+- `engine/ollama.rs:23:const SYSTEM_PROMPT: &str = "You are the chat assistant inside RetinaCare, a research prototype for retinal image analysis. \`
+- `engine/ollama.rs:161:pub fn build_messages(request: &ChatRequest) -> Vec<serde_json::Value> {`
+- `engine/ollama.rs:162:    let mut system = SYSTEM_PROMPT.to_string();`
+- `engine/ollama.rs:219:pub fn ungrounded_numbers(answer: &str, given: &str) -> Vec<String> {`
+- `engine/ollama.rs:232:pub fn stage_status_reply(prompt: &str, results: &str) -> Option<String> {`
+- `engine/ollama.rs:285:pub fn plain_dashes(text: &str) -> String {`
+- `engine/ollama.rs:393:                .and_then(|r| stage_status_reply(&request.prompt, r))`
+- `engine/ollama.rs:529:                            text: plain_dashes(text),`
+- `engine/ollama.rs:569:                let nums = ungrounded_numbers(&answer, &given);`
+- `engine/ollama.rs:650:        assert!(ungrounded_numbers("Score 0.065 is under 0.2392.", given).is_empty());`
+- `engine/ollama.rs:652:            ungrounded_numbers("For Stage II, 234 MA, 12 HE.", given),`
+- `engine/ollama.rs:655:        assert!(ungrounded_numbers("1. First point\n2. Second point", given).is_empty());`
+- `engine/ollama.rs:673:        assert_eq!(plain_dashes("a \u{2014} b \u{2013} c"), "a - b - c");`
+- `engine/ollama.rs:675:        assert!(SYSTEM_PROMPT.contains("never use an em dash"));`
+- `engine/ollama.rs:681:        let a = stage_status_reply("why were stage 1 and 3 did not run", all).unwrap();`
+- `engine/ollama.rs:683:        assert!(stage_status_reply("what does grade 2 mean", all).is_none());`
+- `engine/ollama.rs:685:        let b = stage_status_reply("stage III did not run, why", some).unwrap();`
+- `engine/ollama.rs:837:                    ungrounded_numbers(&a, &format!("{ctx}\n{q}")).is_empty(),`
+
+## PDF report (8 hits)
+Report generation.
+
+- `main.rs:1727:    fn build_pdf_document(&self) -> retinacare_reports::PdfDocument {`
+- `engine/report.rs:200:pub fn build_report_document(ctx: &ReportContext) -> retinacare_reports::PdfDocument {`
+- `engine/report.rs:355:        title: "Retinal Fundus Examination Report".to_string(),`
+- `ui/viewer.rs:2264:fn render_clinical_report_overview(`
+- `ui/viewer.rs:2859:fn render_report_actions_footer(`
+- `ui/viewer.rs:2982:fn render_pdf_export_modal(`
+- `ui/viewer.rs:3489:fn render_report_subroute_toolbar(`
+- `ui/viewer.rs:3564:fn render_pdf_export_screen(`
+
+## Storage and security (44 hits)
+Encrypted store, hashing, wipes.
+
+- `main.rs:33:use security::{compute_sha256, scrub_image_metadata, validate_attachment_path};`
+- `main.rs:765:            let sha256_hash = Some(compute_sha256(&file_bytes));`
+- `main.rs:987:        let hash = crate::security::compute_sha256(&std::fs::read(&path).ok()?);`
+- `main.rs:998:                            .is_ok_and(|b| crate::security::compute_sha256(&b) == hash);`
+- `cloud_app.rs:8:use zeroize::Zeroize;`
+- `cloud_app.rs:142:                    let password = zeroize::Zeroizing::new(std::mem::take(&mut self.cloud_password));`
+- `cloud_app.rs:143:                    self.cloud_password.zeroize();`
+- `cloud_app.rs:156:            self.cloud_password.zeroize();`
+- `chat_app.rs:150:            (Some(want), Ok(bytes)) if crate::security::compute_sha256(&bytes) != *want => {`
+- `chat_app.rs:455:    pub(crate) fn delete_all_chats(&mut self, ctx: &egui::Context) {`
+- `chat_app.rs:1207:            sha256_hash: Some(crate::security::compute_sha256(b"%PDF-1.4 test")),`
+- `science_app.rs:9:use crate::security::compute_sha256;`
+- `science_app.rs:104:        if compute_sha256(&bytes) != job.image_sha256 {`
+- `security.rs:70:pub struct ZeroizedBuffer {`
+- `security.rs:74:impl ZeroizedBuffer {`
+- `security.rs:92:impl Drop for ZeroizedBuffer {`
+- `security.rs:103:pub fn compute_sha256(data: &[u8]) -> String {`
+- `security.rs:123:    let actual = compute_sha256(data);`
+- `security.rs:169:/// NIST SP 800-38D AES-256-GCM Authenticated Decryption returning zeroized memory buffer`
+- `security.rs:173:) -> Result<ZeroizedBuffer, SecurityError> {`
+- `security.rs:191:    Ok(ZeroizedBuffer::new(decrypted))`
+- `security.rs:367:        let empty_hash = compute_sha256(b"");`
+- `security.rs:372:        let retina_hash = compute_sha256(b"RetinaCare AI Screening");`
+- `security.rs:414:        let buffer = ZeroizedBuffer::new(vec![0xAA, 0xBB, 0xCC, 0xDD]);`
+- `engine/supabase.rs:15:use zeroize::Zeroizing;`
+- `engine/keystore.rs:6:use zeroize::Zeroizing;`
+- `engine/papers.rs:153:            .map(|b| crate::security::compute_sha256(&b)[..12].to_owned())`
+- `engine/patient.rs:69:    /// Connected to live, unlocked SQLCipher backend.`
+- `engine/patient.rs:71:    /// Backend SQLCipher store exists but requires password unlock.`
+- `engine/patient.rs:93:                write!(f, "SQLCipher database is locked. Master password required.")`
+- `engine/patient.rs:264:// Live Patient Service: encrypted SQLCipher store (retinacare-persistence)`
+- `engine/patient.rs:268:/// frame without querying SQLCipher every frame.`
+- `engine/cloud.rs:11:use zeroize::Zeroizing;`
+- `engine/store.rs:65:    let dest = dir.join(format!("{}.{ext}", crate::security::compute_sha256(&bytes)));`
+- `engine/store.rs:245:        let password = zeroize::Zeroizing::new(password);`
+- `ui/patients.rs:63:    pub unlock_password: zeroize::Zeroizing<String>,`
+- `ui/patients.rs:64:    pub unlock_confirm: zeroize::Zeroizing<String>,`
+- `ui/patients.rs:93:            unlock_password: zeroize::Zeroizing::new(String::new()),`
+- `ui/patients.rs:94:            unlock_confirm: zeroize::Zeroizing::new(String::new()),`
+- `ui/patients.rs:352:            "● SQLCipher Connected",`
+- `ui/patients.rs:357:            "🔒 SQLCipher Locked (Auth Required)",`
+- `ui/patients.rs:612:            "Choose a password of 8 or more characters. Records are encrypted with SQLCipher. The password cannot be recovered if lost."`
+- `ui/patients.rs:686:        zeroize::Zeroize::zeroize(&mut *state.unlock_confirm);`
+- `ui/patients.rs:2105:            "Notice: SQLCipher store is currently locked. Action requires live credentials.",`
+
+## Tests (286 hits)
+Every unit test marker (count shows coverage).
+
+- `ui2/attach_stack.rs:329:    #[test]`
+- `ui2/shell.rs:501:    #[test]`
+- `ui2/shell.rs:508:    #[test]`
+- `ui2/shell.rs:516:    #[test]`
+- `ui2/composer.rs:588:    #[test]`
+- `ui2/composer.rs:594:    #[test]`
+- `ui2/chats_page.rs:479:    #[test]`
+- `ui2/chats_page.rs:490:    #[test]`
+- `ui2/widgets.rs:291:    #[test]`
+- `ui2/widgets.rs:309:    #[test]`
+- `ui2/widgets.rs:321:    #[test]`
+- `ui2/console.rs:207:    #[test]`
+- `ui2/svg.rs:143:    #[test]`
+- `ui2/svg.rs:152:    #[test]`
+- `ui2/theme.rs:135:    #[test]`
+- `ui2/theme.rs:157:    #[test]`
+- `ui2/theme.rs:169:    #[test]`
+- `ui2/theme.rs:204:    #[test]`
+- `main.rs:4554:    #[test]`
+- `main.rs:4574:    #[test]`
+- `main.rs:4584:    #[test]`
+- `main.rs:4590:    #[test]`
+- `main.rs:4599:    #[test]`
+- `main.rs:4614:    #[test]`
+- `main.rs:4627:    #[test]`
+- `main.rs:4638:    #[test]`
+- `main.rs:4646:    #[test]`
+- `main.rs:4657:    #[test]`
+- `main.rs:4672:    #[test]`
+- `main.rs:4692:    #[test]`
+- `main.rs:4701:    #[test]`
+- `main.rs:4710:    #[test]`
+- `main.rs:4729:    #[test]`
+- `main.rs:4738:    #[test]`
+- `main.rs:4764:    #[test]`
+- `main.rs:4781:    #[test]`
+- `main.rs:4851:    #[test]`
+- `main.rs:4869:    #[test]`
+- `main.rs:4890:    #[test]`
+- `main.rs:4909:    #[test]`
+- `main.rs:4924:    #[test]`
+- `main.rs:4938:    #[test]`
+- `main.rs:4947:    #[test]`
+- `main.rs:4961:    #[test]`
+- `main.rs:4969:    #[test]`
+- `main.rs:5002:    #[test]`
+- `main.rs:5031:    #[test]`
+- `main.rs:5059:    #[test]`
+- `main.rs:5072:    #[test]`
+- `main.rs:5089:    #[test]`
+- `main.rs:5129:    #[test]`
+- `main.rs:5173:    #[test]`
+- `main.rs:5203:    #[test]`
+- `main.rs:5225:    #[test]`
+- `main.rs:5234:    #[test]`
+- `main.rs:5271:    #[test]`
+- `main.rs:5300:    #[test]`
+- `main.rs:5328:    #[test]`
+- `main.rs:5369:    #[test]`
+- `main.rs:5433:    #[test]`
+- `main.rs:5489:    #[test]`
+- `main.rs:5503:    #[test]`
+- `main.rs:5523:    #[test]`
+- `main.rs:5554:    #[test]`
+- `main.rs:5577:    #[test]`
+- `main.rs:5596:    #[test]`
+- `main.rs:5637:    #[test]`
+- `main.rs:5661:    #[test]`
+- `chat_app.rs:1193:    #[test]`
+- `chat_app.rs:1239:    #[test]`
+- `chat_app.rs:1276:    #[test]`
+- `chat_app.rs:1283:    #[test]`
+- `chat_app.rs:1315:    #[test]`
+- `chat_app.rs:1351:    #[test]`
+- `chat_app.rs:1369:    #[test]`
+- `chat_app.rs:1387:    #[test]`
+- `chat_app.rs:1417:    #[test]`
+- `domain.rs:942:    #[test]`
+- `domain.rs:950:    #[test]`
+- `domain.rs:956:    #[test]`
+- `domain.rs:962:    #[test]`
+- `domain.rs:968:    #[test]`
+- `domain.rs:978:    #[test]`
+- `domain.rs:1000:    #[test]`
+- `domain.rs:1014:    #[test]`
+- `domain.rs:1031:    #[test]`
+- `domain.rs:1053:    #[test]`
+- `domain.rs:1061:    #[test]`
+- `domain.rs:1077:    #[test]`
+- `domain.rs:1089:    #[test]`
+- `domain.rs:1099:    #[test]`
+- `domain.rs:1107:    #[test]`
+- `domain.rs:1119:    #[test]`
+- `domain.rs:1128:    #[test]`
+- `domain.rs:1149:    #[test]`
+- `domain.rs:1166:    #[test]`
+- `domain.rs:1186:    #[test]`
+- `security.rs:343:    #[test]`
+- `security.rs:364:    #[test]`
+- `security.rs:377:    #[test]`
+- `security.rs:387:    #[test]`
+- `security.rs:398:    #[test]`
+- `security.rs:412:    #[test]`
+- `security.rs:419:    #[test]`
+- `security.rs:433:    #[test]`
+- `security.rs:440:    #[test]`
+- `security.rs:449:    #[test]`
+- `security.rs:458:    #[test]`
+- `security.rs:469:    #[test]`
+- `cascade_flow_tests.rs:169:#[test]`
+- `cascade_flow_tests.rs:190:#[test]`
+- `cascade_flow_tests.rs:198:#[test]`
+- `cascade_flow_tests.rs:215:#[test]`
+- `cascade_flow_tests.rs:269:#[test]`
+- `cascade_flow_tests.rs:307:#[test]`
+- `cascade_flow_tests.rs:326:#[test]`
+- `cascade_flow_tests.rs:345:#[test]`
+- `cascade_flow_tests.rs:361:#[test]`
+- `cascade_flow_tests.rs:384:#[test]`
+- `cascade_flow_tests.rs:410:#[test]`
+- `cascade_flow_tests.rs:468:#[test]`
+- `cascade_flow_tests.rs:515:#[test]`
+- `cascade_flow_tests.rs:548:#[test]`
+- `cascade_flow_tests.rs:597:#[test]`
+- `cascade_flow_tests.rs:684:#[test]`
+- `cascade_flow_tests.rs:709:#[test]`
+- `cascade_flow_tests.rs:763:#[test]`
+- `cascade_flow_tests.rs:786:#[test]`
+- `cascade_flow_tests.rs:865:#[test]`
+- `cascade_flow_tests.rs:923:#[test]`
+- `cascade_flow_tests.rs:941:#[test]`
+- `cascade_flow_tests.rs:960:#[test]`
+- `cascade_flow_tests.rs:1013:#[test]`
+- `cascade_flow_tests.rs:1038:#[test]`
+- `cascade_flow_tests.rs:1062:#[test]`
+- `cascade_flow_tests.rs:1105:#[test]`
+- `cascade_flow_tests.rs:1171:#[test]`
+- `cascade_flow_tests.rs:1244:#[test]`
+- `engine/ollama.rs:621:    #[test]`
+- `engine/ollama.rs:630:    #[test]`
+- `engine/ollama.rs:647:    #[test]`
+- `engine/ollama.rs:671:    #[test]`
+- `engine/ollama.rs:678:    #[test]`
+- `engine/ollama.rs:689:    #[test]`
+- `engine/ollama.rs:698:    #[test]`
+- `engine/ollama.rs:708:    #[test]`
+- `engine/ollama.rs:719:    #[test]`
+- `engine/ollama.rs:775:    #[test]`
+- `engine/ollama.rs:817:    #[test]`
+- `engine/ollama.rs:860:    #[test]`
+- `engine/ollama.rs:878:    #[test]`
+- `engine/chat.rs:114:    #[test]`
+- `engine/chat.rs:150:    #[test]`
+- `engine/supabase.rs:561:    #[test]`
+- `engine/supabase.rs:579:    #[test]`
+- `engine/supabase.rs:613:    #[test]`
+- `engine/supabase.rs:663:    #[test]`
+- `engine/supabase.rs:685:    #[test]`
+- `engine/supabase.rs:704:    #[test]`
+- `engine/supabase.rs:728:    #[test]`
+- `engine/supabase.rs:757:    #[test]`
+- `engine/keystore.rs:63:    #[test]`
+- `engine/export.rs:630:    #[test]`
+- `engine/export.rs:668:    #[test]`
+- `engine/export.rs:696:    #[test]`
+- `engine/export.rs:743:    #[test]`
+- `engine/export.rs:777:    #[test]`
+- `engine/export.rs:820:    #[test]`
+- `engine/manifest.rs:103:    #[test]`
+- `engine/cascade.rs:1080:    #[test]`
+- `engine/cascade.rs:1094:    #[test]`
+- `engine/cascade.rs:1124:    #[test]`
+- `engine/cascade.rs:1151:    #[test]`
+- `engine/cascade.rs:1175:    #[test]`
+- `engine/cascade.rs:1221:    #[test]`
+- `engine/cascade.rs:1292:    #[test]`
+- `engine/cascade.rs:1316:    #[test]`
+- `engine/cascade.rs:1342:    #[test]`
+- `engine/cascade.rs:1358:    #[test]`
+- `engine/cascade.rs:1373:    #[test]`
+- `engine/cascade.rs:1584:    #[test]`
+- `engine/cascade.rs:1604:    #[test]`
+- `engine/gpu.rs:74:    #[test]`
+- `engine/papers.rs:220:    #[test]`
+- `engine/papers.rs:227:    #[test]`
+- `engine/papers.rs:234:    #[test]`
+- `engine/papers.rs:242:    #[test]`
+- `engine/papers.rs:262:    #[test]`
+- `engine/papers.rs:278:    #[test]`
+- `engine/pdf.rs:81:    #[test]`
+- `engine/patient.rs:967:    #[test]`
+- `engine/patient.rs:992:    #[test]`
+- `engine/patient.rs:1004:    #[test]`
+- `engine/patient.rs:1026:    #[test]`
+- `engine/patient.rs:1042:    #[test]`
+- `engine/patient.rs:1052:    #[test]`
+- `engine/patient.rs:1094:    #[test]`
+- `engine/patient.rs:1160:    #[test]`
+- `engine/patient.rs:1212:    #[test]`
+- `engine/explain.rs:449:    #[test]`
+- `engine/explain.rs:476:    #[test]`
+- `engine/explain.rs:509:    #[test]`
+- `engine/explain.rs:525:    #[test]`
+- `engine/explain.rs:553:    #[test]`
+- `engine/report.rs:376:    #[test]`
+- `engine/report.rs:407:    #[test]`
+- `engine/report.rs:442:    #[test]`
+- `engine/report.rs:450:    #[test]`
+- `engine/report.rs:527:    #[test]`
+- `engine/report.rs:542:    #[test]`
+- `engine/report.rs:552:    #[test]`
+- `engine/report.rs:580:    #[test]`
+- `engine/report.rs:593:    #[test]`
+- `engine/report.rs:615:    #[test]`
+- `engine/report.rs:642:    #[test]`
+- `engine/cloud.rs:315:    #[test]`
+- `engine/cloud.rs:374:    #[test]`
+- `engine/cloud.rs:457:    #[test]`
+- `engine/cloud.rs:516:    #[test]`
+- `engine/store.rs:359:    #[test]`
+- `engine/store.rs:403:    #[test]`
+- `engine/store.rs:420:    #[test]`
+- `engine/store.rs:430:    #[test]`
+- `engine/store.rs:441:    #[test]`
+- `engine/store.rs:470:    #[test]`
+- `engine/store.rs:488:    #[test]`
+- `engine/web.rs:203:    #[test]`
+- `engine/web.rs:211:    #[test]`
+- `engine/web.rs:216:    #[test]`
+- `engine/web.rs:224:    #[test]`
+- `engine/science.rs:306:    #[test]`
+- `engine/science.rs:316:    #[test]`
+- `engine/science.rs:336:    #[test]`
+- `engine/science.rs:352:    #[test]`
+- `engine/science.rs:366:    #[test]`
+- `engine/science.rs:406:    #[test]`
+- `engine/science.rs:414:    #[test]`
+- `engine/backend.rs:687:    #[test]`
+- `engine/backend.rs:709:    #[test]`
+- `engine/backend.rs:718:    #[test]`
+- `engine/backend.rs:732:    #[test]`
+- `engine/backend.rs:746:    #[test]`
+- `engine/backend.rs:765:    #[test]`
+- `engine/backend.rs:773:    #[test]`
+- `ui/viewer.rs:4075:    #[test]`
+- `ui/viewer.rs:4092:    #[test]`
+- `ui/viewer.rs:4105:    #[test]`
+- `ui/viewer.rs:4125:    #[test]`
+- `ui/viewer.rs:4143:    #[test]`
+- `ui/composer.rs:474:    #[test]`
+- `ui/composer.rs:486:    #[test]`
+- `ui/composer.rs:495:    #[test]`
+- `ui/composer.rs:513:    #[test]`
+- `ui/cascade_cards.rs:506:    #[test]`
+- `ui/cascade_cards.rs:517:    #[test]`
+- `ui/cascade_cards.rs:532:    #[test]`
+- `ui/cascade_cards.rs:554:    #[test]`
+- `ui/save_exam.rs:222:    #[test]`
+- `ui/save_exam.rs:230:    #[test]`
+- `ui/explain.rs:1756:    #[test]`
+- `ui/explain.rs:1775:    #[test]`
+- `ui/explain.rs:1793:    #[test]`
+- `ui/explain.rs:1808:    #[test]`
+- `ui/explain.rs:1835:    #[test]`
+- `ui/explain.rs:1851:    #[test]`
+- `ui/explain.rs:1873:    #[test]`
+- `ui/explain.rs:1883:    #[test]`
+- `ui/explain.rs:1891:    #[test]`
+- `ui/explain.rs:1912:    #[test]`
+- `ui/explain.rs:1983:    #[test]`
+- `ui/components.rs:125:    #[test]`
+- `ui/science.rs:1552:    #[test]`
+- `ui/science.rs:1561:    #[test]`
+- `ui/science.rs:1575:    #[test]`
+- `ui/science.rs:1582:    #[test]`
+- `ui/science.rs:1592:    #[test]`
+- `ui/markdown.rs:531:    #[test]`
+- `ui/markdown.rs:541:    #[test]`
+- `ui/markdown.rs:549:    #[test]`
+- `plugins/pipeline.rs:186:    #[test]`
+- `plugins/pipeline.rs:194:    #[test]`
+- `plugins/pipeline.rs:208:    #[test]`
+- `plugins/icons.rs:130:    #[test]`
+- `plugins/icons.rs:160:    #[test]`
+- `plugins/mod.rs:741:    #[test]`
+- `plugins/mod.rs:748:    #[test]`
